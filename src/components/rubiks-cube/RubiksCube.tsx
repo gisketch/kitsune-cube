@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useMemo, useState, useRef, forwardRef, useImperativeHandle, memo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 
@@ -128,11 +128,11 @@ function CubieFace({ pieceType, color, rotation = 0 }: CubieFaceProps) {
     <mesh geometry={geometry} rotation={[0, 0, rotation]}>
       <meshPhysicalMaterial
         color={color}
-        roughness={0.1}
+        roughness={0.2}
         metalness={0.0}
-        clearcoat={1.0}
-        clearcoatRoughness={0.05}
-        reflectivity={0.5}
+        clearcoat={0.3}
+        clearcoatRoughness={0.1}
+        reflectivity={0.1}
       />
     </mesh>
   )
@@ -356,13 +356,25 @@ export interface RubiksCubeRef {
   performMove: (move: string) => void
 }
 
-export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
+interface RubiksCubeProps {
+  quaternionRef?: React.MutableRefObject<THREE.Quaternion>
+}
+
+export const RubiksCube = memo(forwardRef<RubiksCubeRef, RubiksCubeProps>(({ quaternionRef }, ref) => {
   const groupRef = useRef<THREE.Group>(null)
-  const isAnimating = useRef(false)
+  
+  // Smooth gyro interpolation
+  useFrame((_, delta) => {
+    if (groupRef.current && quaternionRef?.current) {
+      // Slerp towards the target quaternion
+      // Adjust speed (15) for smoothness vs responsiveness
+      groupRef.current.quaternion.slerp(quaternionRef.current, 15 * delta)
+    }
+  })
   
   // Store logical state of the cube
   // Map of position string "x,y,z" to current cubie data
-  const [cubeState, setCubeState] = useState<{
+  const [cubeState] = useState<{
     [key: string]: {
       initialPos: [number, number, number]
       currentPos: [number, number, number]
@@ -404,23 +416,44 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
 
   useImperativeHandle(ref, () => ({
     performMove: (move: string) => {
+      const cleanMove = move.trim()
+      console.log('Performing move:', cleanMove)
       const moveMap: any = {
         'U': { axis: 'y', layer: 1, angle: -Math.PI / 2 },
         "U'": { axis: 'y', layer: 1, angle: Math.PI / 2 },
+        'U2': { axis: 'y', layer: 1, angle: -Math.PI },
+        "U2'": { axis: 'y', layer: 1, angle: Math.PI },
+        
         'D': { axis: 'y', layer: -1, angle: Math.PI / 2 },
         "D'": { axis: 'y', layer: -1, angle: -Math.PI / 2 },
+        'D2': { axis: 'y', layer: -1, angle: Math.PI },
+        "D2'": { axis: 'y', layer: -1, angle: -Math.PI },
+
         'L': { axis: 'x', layer: -1, angle: Math.PI / 2 },
         "L'": { axis: 'x', layer: -1, angle: -Math.PI / 2 },
+        'L2': { axis: 'x', layer: -1, angle: Math.PI },
+        "L2'": { axis: 'x', layer: -1, angle: -Math.PI },
+
         'R': { axis: 'x', layer: 1, angle: -Math.PI / 2 },
         "R'": { axis: 'x', layer: 1, angle: Math.PI / 2 },
+        'R2': { axis: 'x', layer: 1, angle: -Math.PI },
+        "R2'": { axis: 'x', layer: 1, angle: Math.PI },
+
         'F': { axis: 'z', layer: 1, angle: -Math.PI / 2 },
         "F'": { axis: 'z', layer: 1, angle: Math.PI / 2 },
+        'F2': { axis: 'z', layer: 1, angle: -Math.PI },
+        "F2'": { axis: 'z', layer: 1, angle: Math.PI },
+
         'B': { axis: 'z', layer: -1, angle: Math.PI / 2 },
         "B'": { axis: 'z', layer: -1, angle: -Math.PI / 2 },
+        'B2': { axis: 'z', layer: -1, angle: Math.PI },
+        "B2'": { axis: 'z', layer: -1, angle: -Math.PI },
       }
       
-      if (moveMap[move]) {
-        animationQueue.current.push(moveMap[move])
+      if (moveMap[cleanMove]) {
+        animationQueue.current.push(moveMap[cleanMove])
+      } else {
+        console.warn('Unknown move:', cleanMove)
       }
     }
   }))
@@ -431,6 +464,7 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
     // Start new animation if queue has items and not currently animating
     if (!currentAnimation.current && animationQueue.current.length > 0) {
       const nextMove = animationQueue.current.shift()!
+      console.log('Starting animation for move:', nextMove)
       
       // Find cubies in the layer
       const targetCubies: THREE.Object3D[] = []
@@ -441,14 +475,16 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
       
       groupRef.current.children.forEach(child => {
         // Round position to nearest integer to handle float errors
-        const x = Math.round(child.position.x / OFFSET)
-        const y = Math.round(child.position.y / OFFSET)
-        const z = Math.round(child.position.z / OFFSET)
+        const x = child.position.x / OFFSET
+        const y = child.position.y / OFFSET
+        const z = child.position.z / OFFSET
         
-        if (nextMove.axis === 'x' && x === nextMove.layer) targetCubies.push(child)
-        if (nextMove.axis === 'y' && y === nextMove.layer) targetCubies.push(child)
-        if (nextMove.axis === 'z' && z === nextMove.layer) targetCubies.push(child)
+        if (nextMove.axis === 'x' && Math.abs(x - nextMove.layer) < 0.1) targetCubies.push(child)
+        if (nextMove.axis === 'y' && Math.abs(y - nextMove.layer) < 0.1) targetCubies.push(child)
+        if (nextMove.axis === 'z' && Math.abs(z - nextMove.layer) < 0.1) targetCubies.push(child)
       })
+
+      console.log(`Found ${targetCubies.length} cubies for layer ${nextMove.axis}=${nextMove.layer}`)
 
       currentAnimation.current = {
         ...nextMove,
@@ -461,7 +497,7 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
     // Process current animation
     if (currentAnimation.current) {
       const anim = currentAnimation.current
-      const speed = 10 // Animation speed
+      const speed = 15 // Increased speed for responsiveness
       const step = anim.targetAngle > 0 ? speed * delta : -speed * delta
       
       let finished = false
@@ -475,18 +511,20 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
       }
 
       // Apply rotation to each cubie
-      // We rotate around the world axis (0,0,0)
+      // We rotate around the group's local axis
       const axisVector = new THREE.Vector3(
         anim.axis === 'x' ? 1 : 0,
         anim.axis === 'y' ? 1 : 0,
         anim.axis === 'z' ? 1 : 0
       )
 
+      const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVector, rotationStep)
+
       anim.cubies.forEach(cubie => {
-        // Rotate position
+        // Rotate position (works in local space)
         cubie.position.applyAxisAngle(axisVector, rotationStep)
-        // Rotate orientation
-        cubie.rotateOnWorldAxis(axisVector, rotationStep)
+        // Rotate orientation (premultiply to apply rotation in parent's frame)
+        cubie.quaternion.premultiply(rotQuat)
       })
 
       anim.currentAngle += rotationStep
@@ -519,4 +557,4 @@ export const RubiksCube = forwardRef<RubiksCubeRef>((_, ref) => {
       ))}
     </group>
   )
-})
+}))
