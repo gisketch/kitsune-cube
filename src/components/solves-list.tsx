@@ -199,9 +199,27 @@ function SolveRow({
         <MiniFace face={scrambledState.F} />
       </td>
       <td className="px-4 py-3" style={{ width: 100 }}>
-        <span className="font-mono text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
-          {formatTime(solve.time)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
+            {formatTime(solve.time)}
+          </span>
+          {solve.isManual && (
+            <span 
+              className="rounded px-1.5 py-0.5 text-[10px] font-medium uppercase"
+              style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-sub)' }}
+            >
+              manual
+            </span>
+          )}
+          {solve.isRepeatedScramble && (
+            <span 
+              className="rounded px-1.5 py-0.5 text-[10px] font-medium uppercase"
+              style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-sub)' }}
+            >
+              repeated
+            </span>
+          )}
+        </div>
       </td>
       <td className="hidden px-4 py-3 md:table-cell">
         <span className="line-clamp-1 font-mono text-xs" style={{ color: 'var(--theme-sub)' }}>

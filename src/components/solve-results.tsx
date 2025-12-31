@@ -38,6 +38,7 @@ interface SolveResultsProps {
   showBackButton?: boolean
   solve?: Solve
   animationSpeed?: number
+  isManual?: boolean
 }
 
 interface PhaseMarker {
@@ -186,7 +187,7 @@ function ActionButton({
   )
 }
 
-function CubeNet({ scramble, compact }: { scramble: string; compact?: boolean }) {
+function CubeNet({ scramble }: { scramble: string }) {
   const cubeState = useMemo(() => {
     const moves = scramble
       .trim()
@@ -199,20 +200,13 @@ function CubeNet({ scramble, compact }: { scramble: string; compact?: boolean })
     return cube
   }, [scramble])
 
-  const cellSize = compact ? 'h-6 w-6' : 'h-12 w-12 md:h-12 md:w-12'
-
   return (
-    <div
-      className={`grid grid-cols-3 rounded-lg ${compact ? 'gap-0.5 p-1' : 'gap-1 p-2'}`}
-      style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
-    >
+    <div className="grid grid-cols-3 gap-1">
       {cubeState.F.map((color, i) => (
         <div
           key={i}
-          className={`${cellSize} rounded`}
-          style={{
-            backgroundColor: COLOR_HEX[color as keyof typeof COLOR_HEX] || '#888',
-          }}
+          className="h-10 w-10 rounded-sm md:h-12 md:w-12"
+          style={{ backgroundColor: COLOR_HEX[color as keyof typeof COLOR_HEX] || '#888' }}
         />
       ))}
     </div>
@@ -484,13 +478,10 @@ export function SolveResults({
   onViewStats,
   onWatchReplay,
   onBack,
-  pattern,
-  quaternionRef,
-  cubeRef,
   scramble,
   showBackButton,
   solve,
-  animationSpeed,
+  isManual,
 }: SolveResultsProps) {
   const [isReplayMode, setIsReplayMode] = useState(false)
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1)
@@ -515,8 +506,6 @@ export function SolveResults({
   const isPlayingRef = useRef<boolean>(false)
   const animationFrameRef = useRef<number | null>(null)
   const [replayFacelets, setReplayFacelets] = useState<string>('')
-
-  const has3DCube = pattern && quaternionRef && cubeRef
 
   const crossMoves = analysis?.cross.moves.length ?? 0
   const f2l1Moves = analysis?.f2l[0]?.moves.length ?? 0
@@ -977,6 +966,16 @@ export function SolveResults({
           animate={{ opacity: 1 }}
           className="flex flex-1 flex-col items-center gap-2 px-6 pt-6 md:justify-center md:gap-3 md:px-4 md:pt-4"
         >
+          {(isManual || solve?.isManual) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-2 flex items-center gap-2 rounded-full px-3 py-1"
+              style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-sub)' }}
+            >
+              <span className="text-xs font-medium uppercase tracking-wider">Manual Timer</span>
+            </motion.div>
+          )}
           <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-2 md:flex-row md:items-center md:gap-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -1028,31 +1027,14 @@ export function SolveResults({
                     enableZoom={false}
                   />
                 </div>
-              ) : has3DCube ? (
-                <div className="flex h-40 w-40 items-center justify-center md:h-56 md:w-56">
-                  <CubeViewer
-                    pattern={pattern}
-                    quaternionRef={quaternionRef}
-                    cubeRef={cubeRef}
-                    config={{
-                      ...DEFAULT_CONFIG,
-                      camera: {
-                        ...DEFAULT_CONFIG.camera,
-                        fov: 26,
-                      },
-                    }}
-                    animationSpeed={animationSpeed ?? 15}
-                    enableZoom={false}
-                  />
-                </div>
-              ) : scramble ? (
+              ) : (scramble || solve?.scramble) ? (
                 <div className="py-4 md:py-0">
-                  <CubeNet scramble={scramble} compact />
+                  <CubeNet scramble={scramble || solve?.scramble || ''} />
                 </div>
               ) : null}
             </motion.div>
 
-            {analysis && (
+            {analysis && !isManual && !solve?.isManual && (
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1100,6 +1082,7 @@ export function SolveResults({
             )}
           </div>
 
+          {!isManual && !solve?.isManual && (
           <AnimatePresence mode="wait">
             {isReplayMode ? (
               <motion.div
@@ -1319,7 +1302,9 @@ export function SolveResults({
               </motion.div>
             )}
           </AnimatePresence>
+          )}
 
+          {!isManual && !solve?.isManual && (
           <MobileCFOPBreakdown
             crossMoves={crossMoves}
             f2lMoves={f2lMoves}
@@ -1330,6 +1315,7 @@ export function SolveResults({
             ollDuration={ollDuration}
             pllDuration={pllDuration}
           />
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -1339,16 +1325,20 @@ export function SolveResults({
           >
             <ActionButton icon={ChevronRight} onClick={onNextScramble} label="Next Scramble" />
             <ActionButton icon={RotateCcw} onClick={onRepeatScramble} label="Repeat Scramble" />
-            <ActionButton icon={BarChart3} onClick={onViewStats} label="Detailed Stats" />
-            {canReplay ? (
-              <ActionButton
-                icon={isReplayMode ? Pause : Play}
-                onClick={isReplayMode ? exitReplayMode : enterReplayMode}
-                label={isReplayMode ? 'Exit Replay' : 'Watch Replay'}
-                active={isReplayMode}
-              />
-            ) : (
-              <ActionButton icon={Play} onClick={onWatchReplay} label="Watch Replay" />
+            {!isManual && !solve?.isManual && (
+              <>
+                <ActionButton icon={BarChart3} onClick={onViewStats} label="Detailed Stats" />
+                {canReplay ? (
+                  <ActionButton
+                    icon={isReplayMode ? Pause : Play}
+                    onClick={isReplayMode ? exitReplayMode : enterReplayMode}
+                    label={isReplayMode ? 'Exit Replay' : 'Watch Replay'}
+                    active={isReplayMode}
+                  />
+                ) : (
+                  <ActionButton icon={Play} onClick={onWatchReplay} label="Watch Replay" />
+                )}
+              </>
             )}
           </motion.div>
         </motion.div>

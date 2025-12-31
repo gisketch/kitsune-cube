@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Edit2, Check, X } from 'lucide-react'
+import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2 } from 'lucide-react'
 import type { Solve } from '@/hooks/useSolves'
 import { useAuth } from '@/contexts/AuthContext'
+import { useExperience } from '@/contexts/ExperienceContext'
+import { useAchievements } from '@/contexts/AchievementsContext'
 import { SolvesList } from '@/components/solves-list'
+import { SolveChart } from '@/components/solve-chart'
+import { getLevelTitle } from '@/types/achievements'
 
 interface AccountPageProps {
   solves: Solve[]
@@ -106,6 +110,177 @@ function StatCard({ label, value, highlight }: { label: string; value: string | 
       >
         {value ?? '-'}
       </span>
+    </div>
+  )
+}
+
+interface CFOPStats {
+  avgCross: number | null
+  avgF2L: number | null
+  avgOLL: number | null
+  avgPLL: number | null
+  avgMoves: number | null
+}
+
+function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
+  const validSolves = solves
+    .filter((s) => !s.dnf && s.cfopAnalysis && !s.isManual)
+    .slice(0, count)
+
+  if (validSolves.length === 0) {
+    return { avgCross: null, avgF2L: null, avgOLL: null, avgPLL: null, avgMoves: null }
+  }
+
+  const crossMoves: number[] = []
+  const f2lMoves: number[] = []
+  const ollMoves: number[] = []
+  const pllMoves: number[] = []
+  const totalMoves: number[] = []
+
+  for (const solve of validSolves) {
+    const analysis = solve.cfopAnalysis!
+    if (!analysis.cross.skipped) crossMoves.push(analysis.cross.moves.length)
+    
+    const f2lTotal = analysis.f2l.reduce((sum, pair) => sum + (pair.skipped ? 0 : pair.moves.length), 0)
+    if (f2lTotal > 0) f2lMoves.push(f2lTotal)
+    
+    if (!analysis.oll.skipped) ollMoves.push(analysis.oll.moves.length)
+    if (!analysis.pll.skipped) pllMoves.push(analysis.pll.moves.length)
+    
+    totalMoves.push(solve.solution.length)
+  }
+
+  const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+  return {
+    avgCross: avg(crossMoves),
+    avgF2L: avg(f2lMoves),
+    avgOLL: avg(ollMoves),
+    avgPLL: avg(pllMoves),
+    avgMoves: avg(totalMoves),
+  }
+}
+
+function CFOPStatsWidget({ solves }: { solves: Solve[] }) {
+  const [sampleSize, setSampleSize] = useState(12)
+  const stats = useMemo(() => calculateCFOPStats(solves, sampleSize), [solves, sampleSize])
+
+  const formatMoves = (moves: number | null) => moves ? moves.toFixed(1) : '-'
+
+  return (
+    <div
+      className="rounded-xl p-3 sm:p-4"
+      style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <h3
+          className="text-xs sm:text-sm font-medium uppercase tracking-wider"
+          style={{ color: 'var(--theme-sub)' }}
+        >
+          CFOP Analysis
+        </h3>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--theme-sub)' }}>avg of</span>
+          <select
+            value={sampleSize}
+            onChange={(e) => setSampleSize(Number(e.target.value))}
+            className="rounded px-2 py-1 text-xs"
+            style={{
+              backgroundColor: 'var(--theme-subAlt)',
+              color: 'var(--theme-text)',
+              border: 'none',
+            }}
+          >
+            <option value={5}>5</option>
+            <option value={12}>12</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>Cross</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgCross)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>F2L</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgF2L)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>OLL</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgOLL)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>PLL</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgPLL)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
+        </div>
+        <div className="col-span-2 sm:col-span-1 flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-accent)', opacity: 0.9 }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-bg)' }}>Total</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-bg)' }}>{formatMoves(stats.avgMoves)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-bg)' }}>moves</span>
+        </div>
+      </div>
+
+      <div className="mt-2 text-center text-[10px]" style={{ color: 'var(--theme-sub)' }}>
+        Preferred Method: CFOP
+      </div>
+    </div>
+  )
+}
+
+function StreakWidget() {
+  const { streak, prestige } = useAchievements()
+  const { getXPData } = useExperience()
+  const xpData = getXPData()
+
+  return (
+    <div
+      className="rounded-xl p-3 sm:p-4"
+      style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex flex-col items-center rounded-lg px-2 py-3" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="font-mono text-2xl font-bold" style={{ color: 'var(--theme-text)' }}>{streak.currentStreak}</span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>
+            <Flame className="h-3 w-3" style={{ color: streak.currentStreak > 0 ? 'var(--theme-accent)' : 'var(--theme-sub)' }} />
+            Day Streak
+          </span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-3" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="font-mono text-2xl font-bold" style={{ color: 'var(--theme-text)' }}>{streak.longestStreak}</span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>
+            <Target className="h-3 w-3" style={{ color: 'var(--theme-sub)' }} />
+            Best Streak
+          </span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-3" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="font-mono text-2xl font-bold" style={{ color: 'var(--theme-accent)' }}>
+            {((streak.streakMultiplier - 1) * 100).toFixed(0)}%
+          </span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>
+            <Zap className="h-3 w-3" style={{ color: 'var(--theme-accent)' }} />
+            XP Bonus
+          </span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-3" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>
+            {getLevelTitle(xpData.level, prestige.stars).split(' ')[0]}
+          </span>
+          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>
+            {prestige.stars > 0 ? <Star className="h-3 w-3" style={{ color: 'var(--theme-accent)' }} /> : <Gamepad2 className="h-3 w-3" style={{ color: 'var(--theme-sub)' }} />}
+            {prestige.stars > 0 ? `${prestige.stars} Star${prestige.stars > 1 ? 's' : ''}` : 'Title'}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 text-center text-[10px]" style={{ color: 'var(--theme-sub)' }}>
+        Solve at least 5 times daily to maintain your streak
+      </div>
     </div>
   )
 }
@@ -284,8 +459,11 @@ function ActivityCalendar({ solves }: { solves: Solve[] }) {
 
 function ProfileHeader() {
   const { user } = useAuth()
+  const { getXPData } = useExperience()
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState(user?.displayName || 'Guest')
+
+  const xpData = getXPData()
 
   const handleSave = () => {
     setIsEditing(false)
@@ -298,77 +476,118 @@ function ProfileHeader() {
 
   return (
     <div
-      className="flex items-center gap-4 rounded-xl p-4"
+      className="flex flex-col gap-3 rounded-xl p-4"
       style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
     >
-      {user?.photoURL ? (
-        <img
-          src={user.photoURL}
-          alt={user.displayName || 'User'}
-          className="h-16 w-16 rounded-full"
-        />
-      ) : (
+      <div className="flex items-center gap-4">
+        {user?.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt={user.displayName || 'User'}
+            className="h-16 w-16 rounded-full"
+          />
+        ) : (
+          <div
+            className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold"
+            style={{
+              backgroundColor: 'var(--theme-accent)',
+              color: 'var(--theme-bg)',
+            }}
+          >
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+
+        <div className="flex-1">
+          {isEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="rounded-lg px-3 py-1.5 text-lg font-semibold"
+                style={{
+                  backgroundColor: 'var(--theme-subAlt)',
+                  color: 'var(--theme-text)',
+                  border: '1px solid var(--theme-accent)',
+                }}
+                autoFocus
+              />
+              <button
+                onClick={handleSave}
+                className="rounded-lg p-1.5 transition-colors hover:opacity-80"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                <Check className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleCancel}
+                className="rounded-lg p-1.5 transition-colors hover:opacity-80"
+                style={{ color: 'var(--theme-error)' }}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2
+                className="text-xl font-semibold"
+                style={{ color: 'var(--theme-text)' }}
+              >
+                {displayName}
+              </h2>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="rounded-lg p-1 transition-colors hover:opacity-80"
+                style={{ color: 'var(--theme-sub)' }}
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+            {user?.email || 'Not signed in'}
+          </p>
+        </div>
+
         <div
-          className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold"
+          className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold"
           style={{
             backgroundColor: 'var(--theme-accent)',
             color: 'var(--theme-bg)',
           }}
         >
-          {displayName.charAt(0).toUpperCase()}
+          {xpData.level}
         </div>
-      )}
+      </div>
 
-      <div className="flex-1">
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="rounded-lg px-3 py-1.5 text-lg font-semibold"
-              style={{
-                backgroundColor: 'var(--theme-subAlt)',
-                color: 'var(--theme-text)',
-                border: '1px solid var(--theme-accent)',
-              }}
-              autoFocus
-            />
-            <button
-              onClick={handleSave}
-              className="rounded-lg p-1.5 transition-colors hover:opacity-80"
-              style={{ color: 'var(--theme-accent)' }}
-            >
-              <Check className="h-5 w-5" />
-            </button>
-            <button
-              onClick={handleCancel}
-              className="rounded-lg p-1.5 transition-colors hover:opacity-80"
-              style={{ color: 'var(--theme-error)' }}
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <h2
-              className="text-xl font-semibold"
-              style={{ color: 'var(--theme-text)' }}
-            >
-              {displayName}
-            </h2>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="rounded-lg p-1 transition-colors hover:opacity-80"
-              style={{ color: 'var(--theme-sub)' }}
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-        <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
-          {user?.email || 'Not signed in'}
-        </p>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between text-xs">
+          <span style={{ color: 'var(--theme-sub)' }}>
+            Level {xpData.level}
+          </span>
+          <span style={{ color: 'var(--theme-sub)' }}>
+            {xpData.currentXP} / {xpData.xpForNextLevel} XP
+          </span>
+        </div>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full"
+          style={{ backgroundColor: 'var(--theme-subAlt)' }}
+        >
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{
+              backgroundColor: 'var(--theme-accent)',
+              width: `${Math.min(xpData.progress * 100, 100)}%`,
+            }}
+          />
+        </div>
+        <div
+          className="text-right text-[10px]"
+          style={{ color: 'var(--theme-sub)' }}
+        >
+          Total: {xpData.totalXP} XP
+        </div>
       </div>
     </div>
   )
@@ -386,6 +605,8 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
       <div className="space-y-3 sm:space-y-4">
         <ProfileHeader />
 
+        <StreakWidget />
+
         <div className="grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 md:grid-cols-6">
           <StatCard label="PB" value={stats.best ? formatTime(stats.best) : null} highlight />
           <StatCard label="ao5" value={stats.ao5 ? formatTime(stats.ao5) : null} />
@@ -395,7 +616,11 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
           <StatCard label="Mean" value={stats.mean ? formatTime(stats.mean) : null} />
         </div>
 
+        <CFOPStatsWidget solves={solves} />
+
         <ActivityCalendar solves={solves} />
+
+        <SolveChart solves={solves} />
 
         <div
           className="rounded-xl p-3 sm:p-4"

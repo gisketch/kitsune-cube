@@ -82,10 +82,12 @@ export function useSolves() {
 
     const solvesRef = collection(db, 'users', user.uid, 'solves')
     const q = query(solvesRef, orderBy('date', 'desc'))
+    let unsubscribed = false
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        if (unsubscribed) return
         const newSolves = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -94,12 +96,18 @@ export function useSolves() {
         setLoading(false)
       },
       (error) => {
+        if (unsubscribed) return
         console.error('Failed to fetch solves from Firestore:', error)
+        setSolves(loadLocalSolves())
         setLoading(false)
+        unsubscribe()
       }
     )
 
-    return unsubscribe
+    return () => {
+      unsubscribed = true
+      unsubscribe()
+    }
   }, [user])
 
   useEffect(() => {

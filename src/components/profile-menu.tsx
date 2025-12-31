@@ -18,12 +18,15 @@ import {
   BatteryFull,
   BatteryWarning,
   RotateCcw,
+  Trophy,
+  Users,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useExperience } from '@/contexts/ExperienceContext'
 
 interface ProfileMenuProps {
   isCloudSync?: boolean
-  onNavigate: (page: 'timer' | 'account' | 'simulator' | 'settings') => void
+  onNavigate: (page: 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings') => void
   isConnected: boolean
   isConnecting: boolean
   onConnect: () => void
@@ -34,6 +37,8 @@ interface ProfileMenuProps {
 
 const menuItems = [
   { id: 'account' as const, label: 'Account', icon: UserCircle },
+  { id: 'achievements' as const, label: 'Achievements', icon: Trophy },
+  { id: 'leaderboard' as const, label: 'Leaderboard', icon: Users },
   { id: 'simulator' as const, label: 'Simulator', icon: FlaskConical },
   { id: 'settings' as const, label: 'Settings', icon: Settings },
 ]
@@ -49,8 +54,10 @@ export function ProfileMenu({
   onCalibrate,
 }: ProfileMenuProps) {
   const { user, loading, signInWithGoogle, logout } = useAuth()
+  const { getXPData } = useExperience()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const xpData = getXPData()
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -93,50 +100,69 @@ export function ProfileMenu({
       onMouseEnter={() => setIsDropdownOpen(true)}
       onMouseLeave={() => setIsDropdownOpen(false)}
     >
-      <button
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-base transition-colors"
-        style={{ color: 'var(--theme-text)' }}
-      >
-        {user ? (
-          user.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt={user.displayName || 'User'}
-              className="h-8 w-8 rounded-full"
-            />
+      <div className="flex flex-col items-end gap-1">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-base transition-colors"
+          style={{ color: 'var(--theme-text)' }}
+        >
+          {user ? (
+            user.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="h-8 w-8 rounded-full"
+              />
+            ) : (
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-bg)',
+                }}
+              >
+                {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+              </div>
+            )
           ) : (
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"
-              style={{
-                backgroundColor: 'var(--theme-accent)',
-                color: 'var(--theme-bg)',
-              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+              style={{ backgroundColor: 'var(--theme-subAlt)' }}
             >
-              {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+              <User className="h-4 w-4" />
             </div>
-          )
-        ) : (
+          )}
+          <span className="hidden sm:inline">
+            {user ? user.displayName?.split(' ')[0] || 'Account' : 'Guest'}
+          </span>
+          <span
+            className="flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold"
+            style={{
+              backgroundColor: 'var(--theme-accent)',
+              color: 'var(--theme-bg)',
+            }}
+          >
+            {xpData.level}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        <div className="w-full px-3">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-full"
+            className="h-1 w-full overflow-hidden rounded-full"
             style={{ backgroundColor: 'var(--theme-subAlt)' }}
           >
-            <User className="h-4 w-4" />
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                width: `${Math.min(xpData.progress * 100, 100)}%`,
+              }}
+            />
           </div>
-        )}
-        <span className="hidden sm:inline">
-          {user ? user.displayName?.split(' ')[0] || 'Account' : 'Guest'}
-        </span>
-        {user && isCloudSync && (
-          <Cloud
-            className="h-3.5 w-3.5"
-            style={{ color: 'var(--theme-accent)' }}
-          />
-        )}
-        <ChevronDown
-          className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
+        </div>
+      </div>
 
       <AnimatePresence>
         {isDropdownOpen && (

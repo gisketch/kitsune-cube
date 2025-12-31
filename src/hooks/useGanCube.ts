@@ -148,6 +148,16 @@ export function useGanCube(onMove?: (move: string) => void) {
     }
   }, [])
 
+  const refreshBattery = useCallback(async () => {
+    if (connectionRef.current) {
+      try {
+        await connectionRef.current.sendCubeCommand({ type: 'REQUEST_BATTERY' })
+      } catch (e) {
+        console.warn('Failed to request battery', e)
+      }
+    }
+  }, [])
+
   const clearError = useCallback(() => {
     if (resolveMacPromiseRef.current) {
       resolveMacPromiseRef.current(null)
@@ -175,5 +185,6 @@ export function useGanCube(onMove?: (move: string) => void) {
     clearError,
     submitMacAddress,
     quaternionRef,
+    refreshBattery,
   }
 }

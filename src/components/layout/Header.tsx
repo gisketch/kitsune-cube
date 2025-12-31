@@ -13,12 +13,14 @@ import {
   RotateCcw,
   X,
   Menu,
+  Trophy,
+  Users,
 } from 'lucide-react'
 import { ProfileMenu } from '@/components/profile-menu'
 import { AuthButton } from '@/components/auth-button'
 
 interface HeaderProps {
-  onNavigate: (page: 'timer' | 'account' | 'simulator' | 'settings') => void
+  onNavigate: (page: 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings') => void
   isConnected: boolean
   isConnecting: boolean
   onConnect: () => void
@@ -120,7 +122,23 @@ export function Header({
           <Menu className="h-5 w-5" style={{ color: 'var(--theme-sub)' }} />
         </button>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-2 md:flex">
+          <button
+            onClick={() => onNavigate('leaderboard')}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:opacity-80"
+            style={{ backgroundColor: 'var(--theme-subAlt)' }}
+            title="Leaderboard"
+          >
+            <Users className="h-4 w-4" style={{ color: 'var(--theme-text)', fill: 'var(--theme-text)' }} />
+          </button>
+          <button
+            onClick={() => onNavigate('achievements')}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:opacity-80"
+            style={{ backgroundColor: 'var(--theme-subAlt)' }}
+            title="Achievements"
+          >
+            <Trophy className="h-4 w-4" style={{ color: 'var(--theme-text)', fill: 'var(--theme-text)' }} />
+          </button>
           <ProfileMenu
             isCloudSync={isCloudSync}
             onNavigate={onNavigate}

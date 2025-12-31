@@ -10,6 +10,8 @@ interface ScrambleNotationProps {
   trackerState: ScrambleTrackerState
   timerStatus: 'idle' | 'inspection' | 'running' | 'stopped'
   time: number
+  isManual?: boolean
+  manualScramble?: string
 }
 
 function MoveNotation({
@@ -68,7 +70,7 @@ function RecoveryMoveNotation({ move }: { move: ParsedMove }) {
   )
 }
 
-export function ScrambleNotation({ trackerState, timerStatus, time }: ScrambleNotationProps) {
+export function ScrambleNotation({ trackerState, timerStatus, time, isManual, manualScramble }: ScrambleNotationProps) {
   const { status, moves, originalScramble, recoveryMoves, shouldResetCube } = trackerState
   const isScrambling = status === 'scrambling'
   const isDiverged = status === 'diverged'
@@ -76,6 +78,31 @@ export function ScrambleNotation({ trackerState, timerStatus, time }: ScrambleNo
   const isInspection = timerStatus === 'inspection'
   const isRunning = timerStatus === 'running'
   const isStopped = timerStatus === 'stopped'
+
+  if (isManual && manualScramble) {
+    const manualMoves = manualScramble.split(' ').filter(Boolean)
+    return (
+      <div className="flex min-h-[60px] flex-col items-center justify-center px-4 md:min-h-[80px] md:px-0">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex max-w-xl flex-wrap items-center justify-center gap-x-2 gap-y-1 text-base tracking-wide md:gap-x-4 md:gap-y-2 md:text-2xl"
+        >
+          {manualMoves.map((move, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0.6 }}
+              animate={{ opacity: 1 }}
+              className="inline-block font-bold"
+              style={{ color: 'var(--theme-accent)' }}
+            >
+              {move}
+            </motion.span>
+          ))}
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-[60px] flex-col items-center justify-center px-4 md:min-h-[80px] md:px-0">

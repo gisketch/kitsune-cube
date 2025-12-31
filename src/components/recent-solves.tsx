@@ -75,12 +75,22 @@ export function RecentSolves({ solves }: RecentSolvesProps) {
                 #{solveNumber}
               </span>
               <MiniFace face={scrambledState.F} />
-              <span
-                className="flex-1 text-right font-mono text-sm font-medium"
-                style={{ color: 'var(--theme-text)' }}
-              >
-                {formatTime(solve.time)}
-              </span>
+              <div className="flex flex-1 items-center justify-end gap-1">
+                {solve.isManual && (
+                  <span 
+                    className="rounded px-1 py-0.5 text-[8px] font-medium uppercase"
+                    style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-sub)' }}
+                  >
+                    m
+                  </span>
+                )}
+                <span
+                  className="font-mono text-sm font-medium"
+                  style={{ color: 'var(--theme-text)' }}
+                >
+                  {formatTime(solve.time)}
+                </span>
+              </div>
             </div>
           )
         })}

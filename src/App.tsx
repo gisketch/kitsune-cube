@@ -12,14 +12,20 @@ import { RecentSolves } from '@/components/recent-solves'
 import { Simulator } from '@/components/simulator'
 import { SettingsPanel } from '@/components/settings-panel'
 import { AccountPage } from '@/components/account-page'
+import { AchievementsPage } from '@/components/achievements-page'
+import { LeaderboardPage } from '@/components/leaderboard-page'
+import { ManualTimerDisplay } from '@/components/manual-timer-display'
 import { useCubeState } from '@/hooks/useCubeState'
 import { useCubeFaces } from '@/hooks/useCubeFaces'
 import { useGanCube } from '@/hooks/useGanCube'
 import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import { useTimer } from '@/hooks/useTimer'
+import { useManualTimer } from '@/hooks/useManualTimer'
 import { useSolves, type Solve } from '@/hooks/useSolves'
 import { useGyroRecorder } from '@/hooks/useGyroRecorder'
 import { useSettings } from '@/hooks/useSettings'
+import { useExperience } from '@/contexts/ExperienceContext'
+import { useAchievements } from '@/contexts/AchievementsContext'
 import { ConnectionModal } from '@/components/connection-modal'
 import { CalibrationModal } from '@/components/calibration-modal'
 import { CubeInfoModal } from '@/components/cube-info-modal'
@@ -31,7 +37,7 @@ import { analyzeCFOP, type CFOPAnalysis } from '@/lib/cfop-analyzer'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
 import type { KPattern } from 'cubing/kpuzzle'
 
-type TabType = 'timer' | 'account' | 'simulator' | 'settings'
+type TabType = 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings'
 type SolveViewMode = 'list' | 'results' | 'stats' | 'replay'
 
 interface MoveWithTime {
@@ -70,6 +76,18 @@ function App() {
   const { solves, addSolve, deleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
   const { settings } = useSettings()
   const gyroRecorder = useGyroRecorder()
+  const { addXP } = useExperience()
+  const { recordSolve, checkAndUpdateAchievements, stats: userStats } = useAchievements()
+  
+  const [manualScramble, setManualScramble] = useState('')
+  const [manualTimerEnabled, setManualTimerEnabled] = useState(false)
+  const [triggerNewScramble, setTriggerNewScramble] = useState(0)
+  const [isRepeatedScramble, setIsRepeatedScramble] = useState(false)
+  
+  const manualTimer = useManualTimer({
+    enabled: manualTimerEnabled && activeTab === 'timer',
+    onNextScramble: () => setTriggerNewScramble(n => n + 1),
+  })
 
   const cubeColorValues = useMemo(
     () => getCubeColors(settings.cubeTheme, settings.theme),
@@ -147,7 +165,29 @@ function App() {
           cfopAnalysis: analysis || undefined,
           gyroData: recordedData.gyroData.length > 0 ? recordedData.gyroData : undefined,
           moveTimings: recordedData.moveTimings.length > 0 ? recordedData.moveTimings : undefined,
+          isRepeatedScramble: isRepeatedScramble || undefined,
         })
+
+        if (!isRepeatedScramble) {
+          addXP(finalTime, false)
+          recordSolve()
+          
+          const statsUpdate: Record<string, number> = {
+            totalSolves: userStats.totalSolves + 1,
+            totalMoves: userStats.totalMoves + history.moves.length,
+          }
+          
+          if (analysis) {
+            if (analysis.oll.skipped) statsUpdate.ollSkips = userStats.ollSkips + 1
+            if (analysis.pll.skipped) statsUpdate.pllSkips = userStats.pllSkips + 1
+            if (analysis.cross.moves.length <= 8) statsUpdate.crossUnder8Moves = userStats.crossUnder8Moves + 1
+          }
+          
+          if (history.moves.length <= 20) statsUpdate.godsNumberSolves = userStats.godsNumberSolves + 1
+          if (finalTime < 20000 && history.moves.length > 80) statsUpdate.sub20With80Moves = userStats.sub20With80Moves + 1
+          
+          checkAndUpdateAchievements(statsUpdate)
+        }
       }
     }
   }, [
@@ -162,6 +202,11 @@ function App() {
     addSolve,
     getHistory,
     gyroRecorder,
+    isRepeatedScramble,
+    addXP,
+    recordSolve,
+    checkAndUpdateAchievements,
+    userStats,
   ])
 
   useEffect(() => {
@@ -273,6 +318,7 @@ function App() {
     isMacAddressRequired,
     submitMacAddress,
     batteryLevel,
+    refreshBattery,
   } = useGanCube(handleMove)
 
   useEffect(() => {
@@ -299,30 +345,72 @@ function App() {
 
   const handleNewScramble = useCallback(async () => {
     setIsScrambling(true)
+    setIsRepeatedScramble(false)
     timer.reset()
+    manualTimer.reset()
     clearHistory()
     setLastAnalysis(null)
     setLastSolveTime(0)
     setLastMoveCount(0)
     const scrambleAlg = await generateScramble()
     setScramble(scrambleAlg)
+    setManualScramble(scrambleAlg)
     setIsScrambling(false)
-  }, [setScramble, timer, clearHistory])
+  }, [setScramble, timer, manualTimer, clearHistory])
 
   const handleRepeatScramble = useCallback(() => {
     if (!lastScramble) return
+    setIsRepeatedScramble(true)
     timer.reset()
+    manualTimer.reset()
     clearHistory()
     setLastAnalysis(null)
     setLastSolveTime(0)
     setLastMoveCount(0)
     setScramble(lastScramble)
-  }, [lastScramble, setScramble, timer, clearHistory])
+    setManualScramble(lastScramble)
+  }, [lastScramble, setScramble, timer, manualTimer, clearHistory])
 
   useEffect(() => {
     handleNewScramble()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (triggerNewScramble > 0) {
+      handleNewScramble()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerNewScramble])
+
+  useEffect(() => {
+    setManualTimerEnabled(!isConnected)
+  }, [isConnected])
+
+  useEffect(() => {
+    if (manualTimer.status === 'stopped' && manualTimerEnabled && manualScramble) {
+      setLastSolveTime(manualTimer.time)
+      setLastMoveCount(0)
+      setLastAnalysis(null)
+      setLastScramble(manualScramble)
+
+      addSolve({
+        time: manualTimer.time,
+        scramble: manualScramble,
+        solution: [],
+        isManual: true,
+        isRepeatedScramble: isRepeatedScramble || undefined,
+      })
+
+      if (!isRepeatedScramble) {
+        addXP(manualTimer.time, true)
+        recordSolve()
+        checkAndUpdateAchievements({
+          totalSolves: userStats.totalSolves + 1,
+        })
+      }
+    }
+  }, [manualTimer.status, manualTimer.time, manualTimerEnabled, manualScramble, addSolve, isRepeatedScramble, addXP, recordSolve, checkAndUpdateAchievements, userStats.totalSolves])
 
   const handleSyncCube = useCallback(async () => {
     await resetCubeState()
@@ -384,6 +472,11 @@ function App() {
     if (error || isMacAddressRequired) clearError()
   }
 
+  const handleOpenCubeInfo = useCallback(() => {
+    refreshBattery()
+    setIsCubeInfoOpen(true)
+  }, [refreshBattery])
+
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -425,6 +518,7 @@ function App() {
           batteryLevel={batteryLevel}
           onResetGyro={resetGyro}
           onSyncCube={handleSyncCube}
+          onDisconnect={disconnect}
         />
 
         <Header
@@ -447,9 +541,9 @@ function App() {
                 isConnected={isConnected}
                 isConnecting={isConnecting}
                 onConnect={connect}
-                onOpenCubeInfo={() => setIsCubeInfoOpen(true)}
+                onOpenCubeInfo={handleOpenCubeInfo}
               />
-              {timer.status === 'stopped' && lastSolveTime > 0 ? (
+              {((timer.status === 'stopped' || manualTimer.status === 'stopped') && lastSolveTime > 0) ? (
                 <SolveResults
                   time={lastSolveTime}
                   moves={lastMoveCount}
@@ -463,11 +557,9 @@ function App() {
                       setActiveTab('account')
                     }
                   }}
-                  pattern={frozenPattern}
-                  quaternionRef={quaternionRef}
-                  cubeRef={cubeRef}
+                  scramble={lastScramble}
                   solve={solves.length > 0 ? solves[0] : undefined}
-                  animationSpeed={settings.animationSpeed}
+                  isManual={manualTimerEnabled}
                 />
               ) : (
                 <>
@@ -475,27 +567,37 @@ function App() {
                     trackerState={scrambleState}
                     timerStatus={timer.status}
                     time={timer.time}
+                    isManual={manualTimerEnabled}
+                    manualScramble={manualScramble}
                   />
 
-                  <div className="relative aspect-square w-full max-w-[240px] md:max-w-sm">
-                    {!isLoading && (
-                      <CubeViewer
-                        pattern={frozenPattern}
-                        quaternionRef={quaternionRef}
-                        cubeRef={cubeRef}
-                        config={DEFAULT_CONFIG}
-                        animationSpeed={settings.animationSpeed}
-                        cubeColors={cubeColors}
-                      />
-                    )}
-                  </div>
+                  {manualTimerEnabled ? (
+                    <ManualTimerDisplay
+                      status={manualTimer.status}
+                      time={manualTimer.time}
+                      onConnect={connect}
+                    />
+                  ) : (
+                    <div className="relative aspect-square w-full max-w-[240px] md:max-w-sm">
+                      {!isLoading && (
+                        <CubeViewer
+                          pattern={frozenPattern}
+                          quaternionRef={quaternionRef}
+                          cubeRef={cubeRef}
+                          config={DEFAULT_CONFIG}
+                          animationSpeed={settings.animationSpeed}
+                          cubeColors={cubeColors}
+                        />
+                      )}
+                    </div>
+                  )}
 
                   <CubeConnectionStatus
                     batteryLevel={batteryLevel}
                     isConnected={isConnected}
                     isConnecting={isConnecting}
                     onConnect={connect}
-                    onOpenCubeInfo={() => setIsCubeInfoOpen(true)}
+                    onOpenCubeInfo={handleOpenCubeInfo}
                   />
 
                   <RecentSolves solves={solves} />
@@ -541,6 +643,10 @@ function App() {
                 }}
               />
             )
+          ) : activeTab === 'achievements' ? (
+            <AchievementsPage />
+          ) : activeTab === 'leaderboard' ? (
+            <LeaderboardPage />
           ) : activeTab === 'simulator' ? (
             <Simulator />
           ) : (

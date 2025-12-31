@@ -26,6 +26,8 @@ export interface Solve {
   cfopAnalysis?: CFOPAnalysis
   gyroData?: GyroFrame[]
   moveTimings?: MoveFrame[]
+  isManual?: boolean
+  isRepeatedScramble?: boolean
 }
 
 export interface AppSettings {
