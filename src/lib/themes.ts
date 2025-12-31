@@ -27,6 +27,33 @@ export interface Theme {
 }
 
 export const themes: Record<string, Theme> = {
+  kitsune: {
+    name: 'Kitsune',
+    colors: {
+      bg: '#0c0a09',
+      bgSecondary: '#1c1917',
+      main: '#f97316',
+      sub: '#78716c',
+      subAlt: '#292524',
+      text: '#fafaf9',
+      error: '#ef4444',
+      accent: '#f97316',
+      accentHover: '#ea580c',
+      phaseCross: '#c084fc',
+      phaseF2L1: '#fb923c',
+      phaseF2L2: '#fdba74',
+      phaseF2L3: '#fed7aa',
+      phaseF2L4: '#ffedd5',
+      phaseOLL: '#fbbf24',
+      phasePLL: '#4ade80',
+      cubeWhite: '#fafaf9',
+      cubeYellow: '#fbbf24',
+      cubeGreen: '#22c55e',
+      cubeBlue: '#3b82f6',
+      cubeRed: '#ef4444',
+      cubeOrange: '#f97316',
+    },
+  },
   dark: {
     name: 'Dark',
     colors: {
@@ -370,7 +397,7 @@ export function getCubeColors(cubeTheme: CubeTheme, currentTheme: string): Recor
   }
 
   const themeToUse = cubeTheme === 'current' ? currentTheme : cubeTheme
-  const theme = themes[themeToUse] || themes.dark
+  const theme = themes[themeToUse] || themes.kitsune
 
   return {
     cubeWhite: theme.colors.cubeWhite,
@@ -385,7 +412,7 @@ export function getCubeColors(cubeTheme: CubeTheme, currentTheme: string): Recor
 export const themeKeys = Object.keys(themes) as (keyof typeof themes)[]
 
 export function applyTheme(themeKey: string): void {
-  const theme = themes[themeKey] || themes.dark
+  const theme = themes[themeKey] || themes.kitsune
   const root = document.documentElement
 
   Object.entries(theme.colors).forEach(([key, value]) => {

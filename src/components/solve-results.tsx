@@ -977,12 +977,12 @@ export function SolveResults({
           animate={{ opacity: 1 }}
           className="flex flex-1 flex-col items-center gap-2 px-6 pt-6 md:justify-center md:gap-3 md:px-4 md:pt-4"
         >
-          <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-2 md:flex-row md:items-start md:gap-8">
+          <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-2 md:flex-row md:items-center md:gap-8">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="text-center"
+              className="text-center md:text-left"
             >
               <span className="text-xs md:text-base" style={{ color: 'var(--theme-sub)' }}>
                 time
@@ -992,6 +992,14 @@ export function SolveResults({
                 style={{ color: 'var(--theme-accent)' }}
               >
                 {formatTime(displayTime, time)}
+              </div>
+              <div className="hidden md:flex md:flex-col md:items-start md:mt-1">
+                <span className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+                  tps
+                </span>
+                <span className="text-3xl font-bold" style={{ color: 'var(--theme-text)' }}>
+                  {displayTps}
+                </span>
               </div>
             </motion.div>
 
@@ -1238,13 +1246,47 @@ export function SolveResults({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2, delay: 0.4 }}
-                className="flex w-full max-w-4xl flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-0"
+                className="flex w-full max-w-4xl flex-col gap-3"
               >
-                <div className="flex items-center justify-center gap-6 md:justify-start">
+                {/* Mobile: horizontal layout */}
+                <div className="flex items-center justify-center gap-6 md:hidden">
                   <StatCard label="moves" value={moves.toString()} />
                   <StatCard label="tps" value={displayTps} />
                 </div>
-                <div className="flex items-center justify-center gap-4 md:justify-end md:gap-6">
+                <div className="flex items-center justify-center gap-4 md:hidden">
+                  <PhaseStatCard
+                    label="cross"
+                    moves={crossMoves}
+                    duration={crossDuration}
+                    tps={crossTps}
+                    recognitionRatio={0.15}
+                  />
+                  <PhaseStatCard
+                    label="f2l"
+                    moves={f2lMoves}
+                    duration={f2lDuration}
+                    tps={f2lTps}
+                    recognitionRatio={0.25}
+                  />
+                  <PhaseStatCard
+                    label="oll"
+                    moves={ollMoves}
+                    duration={ollDuration}
+                    tps={ollTps}
+                    recognitionRatio={0.35}
+                  />
+                  <PhaseStatCard
+                    label="pll"
+                    moves={pllMoves}
+                    duration={pllDuration}
+                    tps={pllTps}
+                    recognitionRatio={0.3}
+                  />
+                </div>
+
+                {/* Desktop: centered single row with all stats */}
+                <div className="hidden md:flex md:items-center md:justify-center md:gap-8">
+                  <StatCard label="moves" value={moves.toString()} />
                   <PhaseStatCard
                     label="cross"
                     moves={crossMoves}

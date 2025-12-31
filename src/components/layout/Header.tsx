@@ -82,12 +82,14 @@ export function Header({
           style={{ color: 'var(--theme-accent)' }}
         >
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold"
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
             style={{ backgroundColor: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
           >
-            C
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+              <path d="M12 2L4 8v2c0 1.1.4 2.1 1 3l-1 4c-.2.8.1 1.6.7 2.1.6.5 1.4.7 2.1.4L9 18.5c.9.3 1.9.5 3 .5s2.1-.2 3-.5l2.2 1c.7.3 1.5.1 2.1-.4.6-.5.9-1.3.7-2.1l-1-4c.6-.9 1-1.9 1-3V8l-8-6zm-4 8.5c-.8 0-1.5-.7-1.5-1.5S7.2 7.5 8 7.5s1.5.7 1.5 1.5S8.8 10.5 8 10.5zm8 0c-.8 0-1.5-.7-1.5-1.5S15.2 7.5 16 7.5s1.5.7 1.5 1.5-0.7 1.5-1.5 1.5zm-4 5c-1.1 0-2-.4-2.5-1h5c-.5.6-1.4 1-2.5 1z"/>
+            </svg>
           </div>
-          <span>gisketch's cube timer</span>
+          <span>kitsunecube</span>
         </button>
 
         <button
@@ -95,16 +97,18 @@ export function Header({
           className="flex items-center gap-2 md:hidden"
         >
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold"
+            className="flex h-7 w-7 items-center justify-center rounded-md"
             style={{ backgroundColor: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
           >
-            C
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+              <path d="M12 2L4 8v2c0 1.1.4 2.1 1 3l-1 4c-.2.8.1 1.6.7 2.1.6.5 1.4.7 2.1.4L9 18.5c.9.3 1.9.5 3 .5s2.1-.2 3-.5l2.2 1c.7.3 1.5.1 2.1-.4.6-.5.9-1.3.7-2.1l-1-4c.6-.9 1-1.9 1-3V8l-8-6zm-4 8.5c-.8 0-1.5-.7-1.5-1.5S7.2 7.5 8 7.5s1.5.7 1.5 1.5S8.8 10.5 8 10.5zm8 0c-.8 0-1.5-.7-1.5-1.5S15.2 7.5 16 7.5s1.5.7 1.5 1.5-0.7 1.5-1.5 1.5zm-4 5c-1.1 0-2-.4-2.5-1h5c-.5.6-1.4 1-2.5 1z"/>
+            </svg>
           </div>
           <span
             className="text-sm font-semibold"
             style={{ color: 'var(--theme-accent)' }}
           >
-            Cube Timer
+            kitsunecube
           </span>
         </button>
 

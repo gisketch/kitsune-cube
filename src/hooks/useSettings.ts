@@ -13,7 +13,7 @@ const STORAGE_KEY = 'cube-settings'
 const DEFAULT_SETTINGS: AppSettings = {
   animationSpeed: 15,
   gyroEnabled: true,
-  theme: 'dark',
+  theme: 'kitsune',
   cubeTheme: 'current',
 }
 
