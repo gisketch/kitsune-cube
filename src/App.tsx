@@ -55,6 +55,7 @@ function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const cubeRef = useRef<RubiksCubeRef>(null)
   const recentMovesRef = useRef<MoveWithTime[]>([])
+  const solveSavedRef = useRef(false)
 
   const {
     cubeState,
@@ -145,7 +146,8 @@ function App() {
       syncWithFacelets(SOLVED_FACELETS)
     }
 
-    if (solved && timer.status === 'running') {
+    if (solved && timer.status === 'running' && !solveSavedRef.current) {
+      solveSavedRef.current = true
       const finalTime = timer.stopTimer()
       if (finalTime && scrambleState.originalScramble) {
         const history = getHistory()
@@ -164,7 +166,7 @@ function App() {
           cfopAnalysis: analysis || undefined,
           gyroData: recordedData.gyroData.length > 0 ? recordedData.gyroData : undefined,
           moveTimings: recordedData.moveTimings.length > 0 ? recordedData.moveTimings : undefined,
-          isRepeatedScramble: isRepeatedScramble || undefined,
+          ...(isRepeatedScramble && { isRepeatedScramble: true }),
         })
 
         if (!isRepeatedScramble) {
@@ -345,6 +347,7 @@ function App() {
   const handleNewScramble = useCallback(async () => {
     setIsScrambling(true)
     setIsRepeatedScramble(false)
+    solveSavedRef.current = false
     timer.reset()
     manualTimer.reset()
     clearHistory()
@@ -360,6 +363,7 @@ function App() {
   const handleRepeatScramble = useCallback(() => {
     if (!lastScramble) return
     setIsRepeatedScramble(true)
+    solveSavedRef.current = false
     timer.reset()
     manualTimer.reset()
     clearHistory()
@@ -387,7 +391,8 @@ function App() {
   }, [isConnected])
 
   useEffect(() => {
-    if (manualTimer.status === 'stopped' && manualTimerEnabled && manualScramble) {
+    if (manualTimer.status === 'stopped' && manualTimerEnabled && manualScramble && !solveSavedRef.current) {
+      solveSavedRef.current = true
       setLastSolveTime(manualTimer.time)
       setLastMoveCount(0)
       setLastAnalysis(null)
@@ -398,7 +403,7 @@ function App() {
         scramble: manualScramble,
         solution: [],
         isManual: true,
-        isRepeatedScramble: isRepeatedScramble || undefined,
+        ...(isRepeatedScramble && { isRepeatedScramble: true }),
       })
 
       if (!isRepeatedScramble) {
@@ -409,7 +414,7 @@ function App() {
         })
       }
     }
-  }, [manualTimer.status, manualTimer.time, manualTimerEnabled, manualScramble, addSolve, isRepeatedScramble, addXP, recordSolve, checkAndUpdateAchievements, userStats.totalSolves])
+  }, [manualTimer.status, manualTimerEnabled, manualScramble, isRepeatedScramble, addXP, recordSolve, checkAndUpdateAchievements, userStats.totalSolves, addSolve])
 
   const handleSyncCube = useCallback(async () => {
     await resetCubeState()

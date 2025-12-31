@@ -22,6 +22,7 @@ export function useSolveSession() {
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false)
 
   const cubeRef = useRef<RubiksCubeRef>(null)
+  const solveSavedRef = useRef(false)
 
   const {
     cubeState,
@@ -86,7 +87,8 @@ export function useSolveSession() {
       setSolved(solved)
     }
 
-    if (solved && timer.status === 'running') {
+    if (solved && timer.status === 'running' && !solveSavedRef.current) {
+      solveSavedRef.current = true
       const finalTime = timer.stopTimer()
       if (finalTime && scrambleState.originalScramble) {
         const history = getHistory()
@@ -149,6 +151,7 @@ export function useSolveSession() {
   }, [isConnected, gyroRecorder, quaternionRef])
 
   const handleNewScramble = useCallback(async () => {
+    solveSavedRef.current = false
     timer.reset()
     clearHistory()
     setLastAnalysis(null)
@@ -160,6 +163,7 @@ export function useSolveSession() {
 
   const handleRepeatScramble = useCallback(() => {
     if (!lastScramble) return
+    solveSavedRef.current = false
     timer.reset()
     clearHistory()
     setLastAnalysis(null)
