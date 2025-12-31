@@ -19,6 +19,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cubing": "^0.61.1",
+    "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "gan-web-bluetooth": "^3.0.2",
     "lucide-react": "^0.562.0",

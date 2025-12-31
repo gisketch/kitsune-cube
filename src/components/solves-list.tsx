@@ -9,6 +9,7 @@ interface SolvesListProps {
   solves: Solve[]
   onDelete?: (id: string) => void
   onViewDetails?: (solve: Solve) => void
+  hideStats?: boolean
 }
 
 function formatTime(ms: number): string {
@@ -252,7 +253,7 @@ function SolveRow({
   )
 }
 
-export function SolvesList({ solves, onDelete, onViewDetails }: SolvesListProps) {
+export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: SolvesListProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const totalPages = Math.ceil(solves.length / ITEMS_PER_PAGE)
   
@@ -277,7 +278,7 @@ export function SolvesList({ solves, onDelete, onViewDetails }: SolvesListProps)
 
   return (
     <div>
-      <StatsHeader solves={solves} />
+      {!hideStats && <StatsHeader solves={solves} />}
       <div className="overflow-x-auto">
         <table className="w-full" style={{ borderCollapse: 'collapse' }}>
           <thead>

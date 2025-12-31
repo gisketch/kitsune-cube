@@ -1,11 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  User,
   Settings,
   FlaskConical,
-  History,
-  ChevronDown,
+  UserCircle,
   Bluetooth,
   Battery,
   BatteryLow,
@@ -16,16 +14,26 @@ import {
   X,
   Menu,
 } from 'lucide-react'
+import { ProfileMenu } from '@/components/profile-menu'
+import { AuthButton } from '@/components/auth-button'
 
 interface HeaderProps {
-  onNavigate: (page: 'timer' | 'solves' | 'simulator' | 'settings') => void
+  onNavigate: (page: 'timer' | 'account' | 'simulator' | 'settings') => void
   isConnected: boolean
   isConnecting: boolean
   onConnect: () => void
   onDisconnect: () => void
   batteryLevel: number | null
   onCalibrate?: () => void
+  isCloudSync?: boolean
 }
+
+const menuItems = [
+  { id: 'timer' as const, label: 'Timer', icon: RotateCcw },
+  { id: 'account' as const, label: 'Account', icon: UserCircle },
+  { id: 'simulator' as const, label: 'Simulator', icon: FlaskConical },
+  { id: 'settings' as const, label: 'Settings', icon: Settings },
+]
 
 export function Header({
   onNavigate,
@@ -35,20 +43,9 @@ export function Header({
   onDisconnect,
   batteryLevel,
   onCalibrate,
+  isCloudSync,
 }: HeaderProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -71,14 +68,7 @@ export function Header({
 
   const BatteryIcon = getBatteryIcon()
 
-  const menuItems = [
-    { id: 'timer' as const, label: 'Timer', icon: RotateCcw },
-    { id: 'solves' as const, label: 'Solve History', icon: History },
-    { id: 'simulator' as const, label: 'Simulator', icon: FlaskConical },
-    { id: 'settings' as const, label: 'Settings', icon: Settings },
-  ]
-
-  const handleMobileNavigate = (page: 'timer' | 'solves' | 'simulator' | 'settings') => {
+  const handleMobileNavigate = (page: 'timer' | 'account' | 'simulator' | 'settings') => {
     onNavigate(page)
     setIsMobileMenuOpen(false)
   }
@@ -114,7 +104,7 @@ export function Header({
             className="text-sm font-semibold"
             style={{ color: 'var(--theme-accent)' }}
           >
-            Ghegi
+            Cube Timer
           </span>
         </button>
 
@@ -126,108 +116,17 @@ export function Header({
           <Menu className="h-5 w-5" style={{ color: 'var(--theme-sub)' }} />
         </button>
 
-        <div
-          className="relative hidden pb-2 md:block"
-          ref={dropdownRef}
-          onMouseEnter={() => setIsDropdownOpen(true)}
-          onMouseLeave={() => setIsDropdownOpen(false)}
-        >
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-base transition-colors"
-            style={{ color: 'var(--theme-text)' }}
-          >
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full"
-              style={{ backgroundColor: 'var(--theme-subAlt)' }}
-            >
-              <User className="h-4 w-4" />
-            </div>
-            <span>Ghegi</span>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {isDropdownOpen && (
-            <div
-              className="absolute right-0 top-full z-50 w-52 rounded-lg py-1 shadow-lg"
-              style={{
-                backgroundColor: 'var(--theme-bgSecondary)',
-                border: '1px solid var(--theme-subAlt)',
-              }}
-            >
-              <div
-                className="mb-1 px-3 py-2 text-sm font-medium uppercase"
-                style={{ color: 'var(--theme-sub)' }}
-              >
-                Smart Cube
-              </div>
-
-              <button
-                onClick={() => {
-                  isConnected ? onDisconnect() : onConnect()
-                  setIsDropdownOpen(false)
-                }}
-                disabled={isConnecting}
-                className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors"
-                style={{ color: isConnected ? '#4ade80' : 'var(--theme-text)' }}
-              >
-                <Bluetooth className={`h-4 w-4 ${isConnecting ? 'animate-pulse' : ''}`} />
-                <span>
-                  {isConnected ? 'Disconnect' : isConnecting ? 'Connecting...' : 'Connect Cube'}
-                </span>
-              </button>
-
-              {isConnected && batteryLevel !== null && (
-                <div
-                  className="flex items-center gap-3 px-3 py-2 text-base"
-                  style={{ color: batteryLevel <= 20 ? 'var(--theme-error)' : 'var(--theme-sub)' }}
-                >
-                  <BatteryIcon className="h-4 w-4" />
-                  <span>{batteryLevel}%</span>
-                </div>
-              )}
-
-              {isConnected && onCalibrate && (
-                <button
-                  onClick={() => {
-                    onCalibrate()
-                    setIsDropdownOpen(false)
-                  }}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors hover:opacity-80"
-                  style={{ color: 'var(--theme-text)' }}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>Calibrate Cube</span>
-                </button>
-              )}
-
-              <div className="my-1 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
-
-              <div
-                className="mb-1 px-3 py-2 text-sm font-medium uppercase"
-                style={{ color: 'var(--theme-sub)' }}
-              >
-                Navigation
-              </div>
-
-              {menuItems.slice(1).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onNavigate(item.id)
-                    setIsDropdownOpen(false)
-                  }}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors hover:opacity-80"
-                  style={{ color: 'var(--theme-text)' }}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="hidden md:block">
+          <ProfileMenu
+            isCloudSync={isCloudSync}
+            onNavigate={onNavigate}
+            isConnected={isConnected}
+            isConnecting={isConnecting}
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}
+            batteryLevel={batteryLevel}
+            onCalibrate={onCalibrate}
+          />
         </div>
       </header>
 
@@ -241,15 +140,7 @@ export function Header({
             style={{ backgroundColor: 'var(--theme-bg)' }}
           >
             <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2" style={{ color: 'var(--theme-text)' }}>
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-full"
-                  style={{ backgroundColor: 'var(--theme-subAlt)' }}
-                >
-                  <User className="h-4 w-4" />
-                </div>
-                <span className="font-medium">Ghegi</span>
-              </div>
+              <AuthButton isCloudSync={isCloudSync} />
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="rounded-lg p-2"

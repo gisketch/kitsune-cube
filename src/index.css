@@ -20,6 +20,32 @@
 
   * {
     @apply border-[var(--theme-subAlt)];
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-subAlt) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--theme-subAlt);
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-sub);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 
   body {

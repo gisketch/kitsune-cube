@@ -1,5 +1,13 @@
+import { useState } from 'react'
+import { Upload, Loader2, Cloud, CloudOff } from 'lucide-react'
 import { useSettings } from '@/hooks/useSettings'
+import { useAuth } from '@/contexts/AuthContext'
 import { themes, themeKeys, getCubeColors, type CubeTheme } from '@/lib/themes'
+
+interface SettingsPanelProps {
+  onMigrateToCloud?: () => Promise<{ success: boolean; count: number }>
+  isCloudSync?: boolean
+}
 
 const cubeThemeOptions: { value: CubeTheme; label: string }[] = [
   { value: 'current', label: 'Use Current Theme' },
@@ -7,13 +15,39 @@ const cubeThemeOptions: { value: CubeTheme; label: string }[] = [
   ...themeKeys.map((key) => ({ value: key as CubeTheme, label: themes[key].name })),
 ]
 
-export function SettingsPanel() {
+export function SettingsPanel({ onMigrateToCloud, isCloudSync }: SettingsPanelProps) {
   const { settings, updateSetting, resetSettings } = useSettings()
+  const { user } = useAuth()
+  const [isMigrating, setIsMigrating] = useState(false)
+  const [migrationResult, setMigrationResult] = useState<string | null>(null)
 
   const cubeColors = getCubeColors(settings.cubeTheme, settings.theme)
 
+  const handleMigrate = async () => {
+    if (!onMigrateToCloud) return
+    setIsMigrating(true)
+    setMigrationResult(null)
+
+    try {
+      const result = await onMigrateToCloud()
+      if (result.success) {
+        setMigrationResult(
+          result.count > 0
+            ? `Successfully migrated ${result.count} solves to cloud!`
+            : 'No local solves to migrate'
+        )
+      } else {
+        setMigrationResult('Migration failed. Please try again.')
+      }
+    } catch {
+      setMigrationResult('Migration failed. Please try again.')
+    } finally {
+      setIsMigrating(false)
+    }
+  }
+
   return (
-    <div className="mx-auto h-full max-w-2xl overflow-y-auto p-6 pb-24">
+    <div className="mx-auto w-full max-w-7xl overflow-y-auto px-4 py-4 md:px-8 pb-8">
       <h2 className="mb-6 text-xl font-semibold" style={{ color: 'var(--theme-text)' }}>
         Settings
       </h2>
@@ -197,6 +231,65 @@ export function SettingsPanel() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--theme-bgSecondary)' }}>
+          <h3
+            className="mb-4 text-sm font-medium uppercase tracking-wider"
+            style={{ color: 'var(--theme-sub)' }}
+          >
+            Data & Sync
+          </h3>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2" style={{ color: 'var(--theme-sub)' }}>
+              {isCloudSync ? (
+                <>
+                  <Cloud className="h-4 w-4" style={{ color: 'var(--theme-accent)' }} />
+                  <span className="text-sm">Cloud sync is enabled</span>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="h-4 w-4" />
+                  <span className="text-sm">
+                    {user ? 'Cloud sync active' : 'Sign in to enable cloud sync'}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {user && onMigrateToCloud && (
+              <div className="space-y-2">
+                <button
+                  onClick={handleMigrate}
+                  disabled={isMigrating}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: 'var(--theme-subAlt)',
+                    color: 'var(--theme-text)',
+                  }}
+                >
+                  {isMigrating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <span>Migrate Local Solves to Cloud</span>
+                </button>
+                <p className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+                  Upload any solves stored locally to your cloud account.
+                </p>
+                {migrationResult && (
+                  <p
+                    className="text-sm"
+                    style={{ color: migrationResult.includes('failed') ? 'var(--theme-error)' : 'var(--theme-accent)' }}
+                  >
+                    {migrationResult}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

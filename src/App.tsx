@@ -7,11 +7,11 @@ import { CommandPalette } from '@/components/command-palette'
 import { CubeViewer, type RubiksCubeRef, type CubeColors } from '@/components/cube'
 import { ScrambleNotation } from '@/components/scramble-notation'
 import { SolveResults } from '@/components/solve-results'
-import { SolvesList } from '@/components/solves-list'
 import { SolveDetailPage } from '@/components/solve-detail-page'
 import { RecentSolves } from '@/components/recent-solves'
 import { Simulator } from '@/components/simulator'
 import { SettingsPanel } from '@/components/settings-panel'
+import { AccountPage } from '@/components/account-page'
 import { useCubeState } from '@/hooks/useCubeState'
 import { useCubeFaces } from '@/hooks/useCubeFaces'
 import { useGanCube } from '@/hooks/useGanCube'
@@ -31,7 +31,7 @@ import { analyzeCFOP, type CFOPAnalysis } from '@/lib/cfop-analyzer'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
 import type { KPattern } from 'cubing/kpuzzle'
 
-type TabType = 'timer' | 'solves' | 'simulator' | 'settings'
+type TabType = 'timer' | 'account' | 'simulator' | 'settings'
 type SolveViewMode = 'list' | 'results' | 'stats' | 'replay'
 
 interface MoveWithTime {
@@ -67,7 +67,7 @@ function App() {
   } = useScrambleTracker()
 
   const timer = useTimer()
-  const { solves, addSolve, deleteSolve } = useSolves()
+  const { solves, addSolve, deleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
   const { settings } = useSettings()
   const gyroRecorder = useGyroRecorder()
 
@@ -386,10 +386,10 @@ function App() {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center"
+      className="min-h-screen flex flex-col"
       style={{ backgroundColor: 'var(--theme-bg)' }}
     >
-      <div className="flex h-full w-full max-w-7xl flex-col">
+      <div className="flex flex-1 flex-col w-full max-w-7xl mx-auto">
         <ConnectionModal
           isOpen={modalState.isOpen || isMacAddressRequired || !!error}
           onClose={closeModal}
@@ -435,9 +435,10 @@ function App() {
           onDisconnect={disconnect}
           batteryLevel={batteryLevel}
           onCalibrate={() => setIsCalibrationOpen(true)}
+          isCloudSync={isCloudSync}
         />
 
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex flex-1 flex-col min-h-0">
           {activeTab === 'timer' ? (
             <div className="flex flex-1 flex-col items-center gap-0 px-6 pt-2 md:justify-center md:gap-4 md:p-4 md:pt-4">
               <StatusBar
@@ -459,7 +460,7 @@ function App() {
                     if (solves.length > 0) {
                       setSelectedSolve(solves[0])
                       setSolveViewMode('stats')
-                      setActiveTab('solves')
+                      setActiveTab('account')
                     }
                   }}
                   pattern={frozenPattern}
@@ -501,12 +502,13 @@ function App() {
                 </>
               )}
             </div>
-          ) : activeTab === 'solves' ? (
+          ) : activeTab === 'account' ? (
             solveViewMode === 'stats' && selectedSolve ? (
               <SolveDetailPage
                 solve={selectedSolve}
                 onBack={() => {
-                  setSolveViewMode('results')
+                  setSolveViewMode('list')
+                  setSelectedSolve(null)
                 }}
               />
             ) : solveViewMode === 'results' && selectedSolve ? (
@@ -530,30 +532,26 @@ function App() {
                 solve={selectedSolve}
               />
             ) : (
-              <div className="flex-1 overflow-auto">
-                <div className="p-4">
-                  <h2 className="mb-4 text-lg font-medium" style={{ color: 'var(--theme-text)' }}>
-                    Solve History
-                  </h2>
-                  <SolvesList
-                    solves={solves}
-                    onDelete={deleteSolve}
-                    onViewDetails={(solve) => {
-                      setSelectedSolve(solve)
-                      setSolveViewMode('results')
-                    }}
-                  />
-                </div>
-              </div>
+              <AccountPage
+                solves={solves}
+                onDeleteSolve={deleteSolve}
+                onViewSolveDetails={(solve) => {
+                  setSelectedSolve(solve)
+                  setSolveViewMode('results')
+                }}
+              />
             )
           ) : activeTab === 'simulator' ? (
             <Simulator />
           ) : (
-            <SettingsPanel />
+            <SettingsPanel
+              onMigrateToCloud={migrateLocalToCloud}
+              isCloudSync={isCloudSync}
+            />
           )}
         </main>
 
-        <div className="hidden md:block">
+        <div className="hidden md:block mt-auto">
           <KeyboardHints isConnected={isConnected} />
           <Footer />
         </div>

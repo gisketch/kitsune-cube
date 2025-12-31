@@ -250,7 +250,7 @@ export function StatusBar({
           <StatusButton
             icon={Bluetooth}
             label="cube"
-            value={isConnecting ? 'connecting...' : '(press to connect)'}
+            value={isConnecting ? 'connecting...' : 'press to connect'}
             onClick={onConnect}
           />
         )}

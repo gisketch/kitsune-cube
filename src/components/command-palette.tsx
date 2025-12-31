@@ -8,7 +8,7 @@ interface CommandPaletteProps {
   onResetGyro: () => void
   onResetCube: () => void
   onConnectCube: () => void
-  onNavigate: (page: 'timer' | 'solves' | 'simulator' | 'settings') => void
+  onNavigate: (page: 'timer' | 'account' | 'simulator' | 'settings') => void
   isConnected: boolean
 }
 
@@ -66,13 +66,13 @@ export function CommandPalette({
     },
     {
       id: 'solve-history',
-      label: 'Solve History',
+      label: 'Account & Solve History',
       icon: History,
       action: () => {
-        onNavigate('solves')
+        onNavigate('account')
         onClose()
       },
-      keywords: ['solves', 'times', 'history', 'records'],
+      keywords: ['solves', 'times', 'history', 'records', 'account', 'profile'],
     },
     {
       id: 'settings',
