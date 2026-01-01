@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { StatusBar, CubeConnectionStatus } from '@/components/layout/StatusBar'
@@ -18,10 +19,11 @@ import { ManualTimerDisplay } from '@/components/manual-timer-display'
 import { SolvePage } from '@/components/solve-page'
 import { useCubeState } from '@/hooks/useCubeState'
 import { useCubeFaces } from '@/hooks/useCubeFaces'
-import { useGanCube } from '@/hooks/useGanCube'
+import { useGanCube, MAC_ADDRESS_STORAGE_KEY } from '@/hooks/useGanCube'
 import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import { useSolves } from '@/hooks/useSolves'
 import { useSettings } from '@/hooks/useSettings'
+import { useAuth } from '@/contexts/AuthContext'
 import { useSolveSession } from '@/contexts/SolveSessionContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { ConnectionModal } from '@/components/connection-modal'
@@ -31,6 +33,7 @@ import { generateScramble, SOLVED_FACELETS } from '@/lib/cube-state'
 import { setCubeColors } from '@/lib/cube-state'
 import { setCubeFaceColors } from '@/lib/cube-faces'
 import { getCubeColors } from '@/lib/themes'
+import { db, isOfflineMode } from '@/lib/firebase'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
 import type { KPattern } from 'cubing/kpuzzle'
 
@@ -117,6 +120,42 @@ function App() {
   const { solves, deleteSolve: rawDeleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
   const { recalculateStats } = useAchievements()
   const { settings, updateSetting } = useSettings()
+  const { user } = useAuth()
+
+  const [savedMacAddress, setSavedMacAddress] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadSavedMacAddress = async () => {
+      if (user && db && !isOfflineMode) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid))
+          if (userDoc.exists() && userDoc.data().macAddress) {
+            setSavedMacAddress(userDoc.data().macAddress)
+            localStorage.setItem(MAC_ADDRESS_STORAGE_KEY, userDoc.data().macAddress)
+            return
+          }
+        } catch (e) {
+          console.warn('Failed to load MAC address from cloud:', e)
+        }
+      }
+      const localMac = localStorage.getItem(MAC_ADDRESS_STORAGE_KEY)
+      if (localMac) {
+        setSavedMacAddress(localMac)
+      }
+    }
+    loadSavedMacAddress()
+  }, [user])
+
+  const handleMacAddressResolved = useCallback(async (mac: string) => {
+    setSavedMacAddress(mac)
+    if (user && db && !isOfflineMode) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), { macAddress: mac }, { merge: true })
+      } catch (e) {
+        console.warn('Failed to save MAC address to cloud:', e)
+      }
+    }
+  }, [user])
 
   const deleteSolve = useCallback(async (id: string) => {
     await rawDeleteSolve(id)
@@ -324,7 +363,11 @@ function App() {
     submitMacAddress,
     batteryLevel,
     refreshBattery,
-  } = useGanCube(handleMove)
+  } = useGanCube({
+    onMove: handleMove,
+    savedMacAddress,
+    onMacAddressResolved: handleMacAddressResolved,
+  })
 
   useEffect(() => {
     if (!isConnected) return

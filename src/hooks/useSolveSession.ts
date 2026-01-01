@@ -71,7 +71,7 @@ export function useSolveSession() {
     [trackMove, timer, updateCubeState, updateCubeFaces, gyroRecorder, handleCalibration],
   )
 
-  const ganCube = useGanCube(handleMove)
+  const ganCube = useGanCube({ onMove: handleMove })
   const { resetGyro, quaternionRef, isConnected } = ganCube
 
   useEffect(() => {

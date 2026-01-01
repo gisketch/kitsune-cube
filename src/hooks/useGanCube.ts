@@ -3,6 +3,7 @@ import { connectGanCube, type GanCubeConnection, type GanCubeEvent } from 'gan-w
 import * as THREE from 'three'
 
 const VALID_MOVE_REGEX = /^[RLUDFB]['2]?$/
+const MAC_ADDRESS_STORAGE_KEY = 'gan-cube-mac-address'
 
 export interface GanCubeState {
   isConnected: boolean
@@ -14,7 +15,14 @@ export interface GanCubeState {
   batteryLevel: number | null
 }
 
-export function useGanCube(onMove?: (move: string) => void) {
+interface UseGanCubeOptions {
+  onMove?: (move: string) => void
+  savedMacAddress?: string | null
+  onMacAddressResolved?: (mac: string) => void
+}
+
+export function useGanCube(options: UseGanCubeOptions = {}) {
+  const { onMove, savedMacAddress, onMacAddressResolved } = options
   const [state, setState] = useState<GanCubeState>({
     isConnected: false,
     isConnecting: false,
@@ -88,6 +96,12 @@ export function useGanCube(onMove?: (move: string) => void) {
     try {
       const conn = await connectGanCube(async (_device: any, isFallbackCall?: boolean) => {
         if (isFallbackCall) {
+          const storedMac = savedMacAddress || localStorage.getItem(MAC_ADDRESS_STORAGE_KEY)
+          if (storedMac) {
+            addLog(`Using saved MAC address: ${storedMac}`)
+            return storedMac
+          }
+          
           addLog('MAC Address required')
           setState((prev) => ({
             ...prev,
@@ -132,14 +146,20 @@ export function useGanCube(onMove?: (move: string) => void) {
         isMacAddressRequired: false,
       }))
     }
-  }, [state.isConnected, state.isConnecting, handleEvent, addLog])
+  }, [state.isConnected, state.isConnecting, handleEvent, addLog, savedMacAddress])
 
   const submitMacAddress = useCallback((mac: string) => {
     if (resolveMacPromiseRef.current) {
+      localStorage.setItem(MAC_ADDRESS_STORAGE_KEY, mac)
+      onMacAddressResolved?.(mac)
       resolveMacPromiseRef.current(mac)
       resolveMacPromiseRef.current = null
       setState((prev) => ({ ...prev, isMacAddressRequired: false, error: null }))
     }
+  }, [onMacAddressResolved])
+
+  const clearSavedMacAddress = useCallback(() => {
+    localStorage.removeItem(MAC_ADDRESS_STORAGE_KEY)
   }, [])
 
   const disconnect = useCallback(async () => {
@@ -174,13 +194,7 @@ export function useGanCube(onMove?: (move: string) => void) {
   }, [])
 
   const resetGyro = useCallback(() => {
-    // Set offset such that current raw becomes the identity orientation
-    // The user should hold the cube with white on top and green facing front
-    // This means current raw should map to identity (no rotation)
-    // offset = raw.inverse()
     gyroOffsetRef.current.copy(rawQuaternionRef.current).invert()
-
-    // Reset the displayed quaternion to identity immediately
     quaternionRef.current.set(0, 0, 0, 1)
   }, [])
 
@@ -191,7 +205,10 @@ export function useGanCube(onMove?: (move: string) => void) {
     resetGyro,
     clearError,
     submitMacAddress,
+    clearSavedMacAddress,
     quaternionRef,
     refreshBattery,
   }
 }
+
+export { MAC_ADDRESS_STORAGE_KEY }
