@@ -178,15 +178,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       triggerTestPersonalBest 
     }}>
       {children}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[150] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed top-3 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:top-4 z-[150] flex flex-col gap-2 sm:gap-3 pointer-events-none">
         <AnimatePresence>
           {notifications.map(notification => (
             <motion.div
               key={notification.id}
-              initial={{ opacity: 0, y: -50, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="pointer-events-auto"
             >
               {notification.type === 'achievement' ? (
@@ -213,44 +213,35 @@ function AchievementNotification({
   const colors = tierColors[tier]
 
   return (
-    <motion.div
-      className={`relative flex items-center gap-4 px-6 py-4 rounded-xl border backdrop-blur-md ${colors.bg} ${colors.border} shadow-lg ${colors.glow}`}
-      whileHover={{ scale: 1.02 }}
+    <div
+      className={`relative flex items-center gap-2 sm:gap-4 px-3 py-2.5 sm:px-6 sm:py-4 rounded-xl border backdrop-blur-md cursor-pointer transition-opacity hover:opacity-90 ${colors.bg} ${colors.border} shadow-lg ${colors.glow}`}
       onClick={onClose}
     >
-      <motion.div
-        className={`p-3 rounded-full ${colors.bg} ${colors.border} border`}
-        animate={{ rotate: [0, -10, 10, -10, 0] }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <Trophy className={`w-6 h-6 ${colors.text}`} />
-      </motion.div>
+      <div className={`p-2 sm:p-3 rounded-full ${colors.bg} ${colors.border} border`}>
+        <Trophy className={`w-4 h-4 sm:w-6 sm:h-6 ${colors.text}`} />
+      </div>
       
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2">
-          <Sparkles className={`w-4 h-4 ${colors.text}`} />
-          <span className={`text-xs font-semibold uppercase tracking-wider ${colors.text}`}>
+      <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Sparkles className={`w-3 h-3 sm:w-4 sm:h-4 ${colors.text}`} />
+          <span className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider ${colors.text}`}>
             Achievement Unlocked
           </span>
         </div>
-        <span className="text-lg font-bold text-white mt-0.5">
+        <span className="text-sm sm:text-lg font-bold text-white mt-0.5 truncate">
           {notification.title}
         </span>
         {notification.subtitle && (
-          <span className="text-sm text-white/70">
+          <span className="text-xs sm:text-sm text-white/70 truncate">
             {notification.subtitle}
           </span>
         )}
       </div>
 
-      <motion.div
-        className={`absolute -top-1 -right-1 p-1.5 rounded-full ${colors.bg} ${colors.border} border`}
-        animate={{ scale: [1, 1.2, 1] }}
-        transition={{ repeat: 2, duration: 0.3 }}
-      >
-        <Star className={`w-4 h-4 ${colors.text} fill-current`} />
-      </motion.div>
-    </motion.div>
+      <div className={`absolute -top-1 -right-1 p-1 sm:p-1.5 rounded-full ${colors.bg} ${colors.border} border`}>
+        <Star className={`w-3 h-3 sm:w-4 sm:h-4 ${colors.text} fill-current`} />
+      </div>
+    </div>
   )
 }
 
@@ -262,36 +253,31 @@ function PersonalBestNotification({
   onClose: () => void 
 }) {
   return (
-    <motion.div
-      className="relative flex items-center gap-4 px-6 py-4 rounded-xl border backdrop-blur-md bg-gradient-to-r from-green-500/30 to-emerald-400/30 border-green-500/60 shadow-lg shadow-green-500/30"
-      whileHover={{ scale: 1.02 }}
+    <div
+      className="relative flex items-center gap-2 sm:gap-4 px-3 py-2.5 sm:px-6 sm:py-4 rounded-xl border backdrop-blur-md cursor-pointer transition-opacity hover:opacity-90 bg-gradient-to-r from-green-500/30 to-emerald-400/30 border-green-500/60 shadow-lg shadow-green-500/30"
       onClick={onClose}
     >
-      <motion.div
-        className="p-3 rounded-full bg-green-500/30 border border-green-500/50"
-        animate={{ scale: [1, 1.1, 1] }}
-        transition={{ repeat: 3, duration: 0.3 }}
-      >
-        <Zap className="w-6 h-6 text-green-400 fill-current" />
-      </motion.div>
+      <div className="p-2 sm:p-3 rounded-full bg-green-500/30 border border-green-500/50">
+        <Zap className="w-4 h-4 sm:w-6 sm:h-6 text-green-400 fill-current" />
+      </div>
       
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-green-400" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-green-400">
+      <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+          <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-green-400">
             Personal Best!
           </span>
         </div>
-        <span className="text-lg font-bold text-white mt-0.5">
+        <span className="text-sm sm:text-lg font-bold text-white mt-0.5 truncate">
           {notification.title}
         </span>
         {notification.subtitle && (
-          <span className="text-sm text-green-300">
+          <span className="text-xs sm:text-sm text-green-300 truncate">
             {notification.subtitle}
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
 

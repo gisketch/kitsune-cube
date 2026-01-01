@@ -7,7 +7,7 @@ import {
   where,
   getDocs,
   onSnapshot,
-  addDoc,
+  setDoc,
   deleteDoc,
   updateDoc,
   doc,
@@ -143,8 +143,10 @@ export function useSolves() {
 
       try {
         const solvesRef = collection(db!, 'users', user!.uid, 'solves')
-        const docRef = await addDoc(solvesRef, cleanData)
-        return { ...newSolveData, id: docRef.id } as Solve
+        const newDocRef = doc(solvesRef)
+        const solveWithId = { ...cleanData, solveId: newDocRef.id }
+        await setDoc(newDocRef, solveWithId)
+        return { ...newSolveData, id: newDocRef.id } as Solve
       } catch (error) {
         console.error('Failed to add solve to Firestore:', error)
         return null
@@ -252,13 +254,12 @@ export async function fetchPublicSolve(solveId: string): Promise<Solve | null> {
 
   try {
     const solvesGroup = collectionGroup(db, 'solves')
-    const q = query(solvesGroup, where('__name__', '>=', solveId), where('__name__', '<=', solveId + '\uf8ff'))
+    const q = query(solvesGroup, where('solveId', '==', solveId))
     const snapshot = await getDocs(q)
     
-    for (const docSnap of snapshot.docs) {
-      if (docSnap.id === solveId) {
-        return { id: docSnap.id, ...docSnap.data() } as Solve
-      }
+    if (!snapshot.empty) {
+      const docSnap = snapshot.docs[0]
+      return { id: docSnap.id, ...docSnap.data() } as Solve
     }
     
     return null
