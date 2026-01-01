@@ -3,7 +3,6 @@ import {
   Trophy, Star, Flame, Target, Cpu, Puzzle, Zap, 
   Hash, Crown, Rocket, Dumbbell, Footprints, Crosshair,
   Waves, Gauge, Clover, Dices, Sparkles, Medal, Bug, Brain, Gamepad2,
-  HelpCircle,
   type LucideIcon
 } from 'lucide-react'
 import { useAchievements } from '@/contexts/AchievementsContext'

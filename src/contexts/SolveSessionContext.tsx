@@ -226,7 +226,12 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           if (analysis.cross.moves.length <= 8)
             statsUpdate.crossUnder8Moves = userStats.crossUnder8Moves + 1
 
-          const pllTime = analysis.pll.duration
+          const crossMoves = analysis.cross.moves.length
+          const f2lMoves = analysis.f2l.reduce((sum, slot) => sum + slot.moves.length, 0)
+          const ollMoves = analysis.oll.moves.length
+          const pllMoves = analysis.pll.moves.length
+          const totalPhaseMoves = crossMoves + f2lMoves + ollMoves + pllMoves
+          const pllTime = totalPhaseMoves > 0 ? (pllMoves / totalPhaseMoves) * time : 0
           if (pllTime && pllTime < 4000) {
             statsUpdate.pllUnder4s = userStats.pllUnder4s + 1
             if (pllTime < 3000) statsUpdate.pllUnder3s = userStats.pllUnder3s + 1
