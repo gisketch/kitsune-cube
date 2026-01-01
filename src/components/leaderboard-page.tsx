@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { collection, query, getDocs, orderBy, limit, startAfter, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
-import { Trophy, Medal, Clock, Loader2, ChevronLeft, ChevronRight, Crown, Target, Users } from 'lucide-react'
+import { db, isOfflineMode } from '@/lib/firebase'
+import { Trophy, Medal, Clock, Loader2, ChevronLeft, ChevronRight, Crown, Target, Users, WifiOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatTime } from '@/lib/format'
 
@@ -50,6 +50,11 @@ export function LeaderboardPage() {
 
   useEffect(() => {
     async function fetchLeaderboard() {
+      if (isOfflineMode || !db) {
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       
       const cached = pageCache.get(page)
@@ -201,7 +206,15 @@ export function LeaderboardPage() {
           </div>
         </div>
 
-        {loading ? (
+        {isOfflineMode ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <WifiOff className="h-12 w-12 mb-2" style={{ color: 'var(--theme-sub)' }} />
+            <p className="font-medium" style={{ color: 'var(--theme-text)' }}>Offline Mode</p>
+            <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+              Leaderboard requires an internet connection
+            </p>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--theme-accent)' }} />
           </div>

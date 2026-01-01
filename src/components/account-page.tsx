@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2 } from 'lucide-react'
+import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2 } from 'lucide-react'
+import { updateProfile } from 'firebase/auth'
 import type { Solve } from '@/hooks/useSolves'
 import { useAuth } from '@/contexts/AuthContext'
 import { useExperience } from '@/contexts/ExperienceContext'
@@ -462,11 +463,22 @@ function ProfileHeader() {
   const { getXPData } = useExperience()
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState(user?.displayName || 'Guest')
+  const [isSaving, setIsSaving] = useState(false)
 
   const xpData = getXPData()
 
-  const handleSave = () => {
-    setIsEditing(false)
+  const handleSave = async () => {
+    if (!user || !displayName.trim()) return
+    
+    setIsSaving(true)
+    try {
+      await updateProfile(user, { displayName: displayName.trim() })
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Failed to update display name:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleCancel = () => {
@@ -512,17 +524,24 @@ function ProfileHeader() {
                   border: '1px solid var(--theme-accent)',
                 }}
                 autoFocus
+                disabled={isSaving}
               />
               <button
                 onClick={handleSave}
-                className="rounded-lg p-1.5 transition-colors hover:opacity-80"
+                disabled={isSaving}
+                className="rounded-lg p-1.5 transition-colors hover:opacity-80 disabled:opacity-50"
                 style={{ color: 'var(--theme-accent)' }}
               >
-                <Check className="h-5 w-5" />
+                {isSaving ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Check className="h-5 w-5" />
+                )}
               </button>
               <button
                 onClick={handleCancel}
-                className="rounded-lg p-1.5 transition-colors hover:opacity-80"
+                disabled={isSaving}
+                className="rounded-lg p-1.5 transition-colors hover:opacity-80 disabled:opacity-50"
                 style={{ color: 'var(--theme-error)' }}
               >
                 <X className="h-5 w-5" />

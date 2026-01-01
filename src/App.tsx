@@ -75,13 +75,11 @@ function App() {
     lastMoveCount,
     lastScramble,
     lastAnalysis,
-    isRepeatedScramble,
     manualTimerEnabled,
     setManualTimerEnabled,
     setRepeatedScramble,
     saveSolve,
     scrambleTrigger,
-    triggerNewScramble,
     resetSolveSession,
   } = useSolveSession()
 
@@ -342,8 +340,8 @@ function App() {
   }, [scrambleTrigger])
 
   useEffect(() => {
-    setManualTimerEnabled(!isConnected)
-  }, [isConnected, setManualTimerEnabled])
+    setManualTimerEnabled(!isConnected && activeTab === 'timer')
+  }, [isConnected, activeTab, setManualTimerEnabled])
 
   useEffect(() => {
     if (manualTimer.status === 'stopped' && manualTimerEnabled && manualScramble && !solveSaved) {

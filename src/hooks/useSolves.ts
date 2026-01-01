@@ -10,7 +10,7 @@ import {
   doc,
   writeBatch,
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, isOfflineMode } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Solve } from '@/types'
 
@@ -73,14 +73,16 @@ export function useSolves() {
   const [solves, setSolves] = useState<Solve[]>([])
   const [loading, setLoading] = useState(true)
 
+  const useLocalStorage = isOfflineMode || !user || !db
+
   useEffect(() => {
-    if (!user) {
+    if (useLocalStorage) {
       setSolves(loadLocalSolves())
       setLoading(false)
       return
     }
 
-    const solvesRef = collection(db, 'users', user.uid, 'solves')
+    const solvesRef = collection(db!, 'users', user!.uid, 'solves')
     const q = query(solvesRef, orderBy('date', 'desc'))
     let unsubscribed = false
 
@@ -108,13 +110,13 @@ export function useSolves() {
       unsubscribed = true
       unsubscribe()
     }
-  }, [user])
+  }, [user, useLocalStorage])
 
   useEffect(() => {
-    if (!user && !loading) {
+    if (useLocalStorage && !loading) {
       saveLocalSolves(solves)
     }
-  }, [solves, user, loading])
+  }, [solves, useLocalStorage, loading])
 
   const addSolve = useCallback(
     async (solve: Omit<Solve, 'id' | 'date'>) => {
@@ -123,7 +125,11 @@ export function useSolves() {
         date: new Date().toISOString(),
       }
 
-      if (!user) {
+      const cleanData = Object.fromEntries(
+        Object.entries(newSolveData).filter(([_, v]) => v !== undefined)
+      )
+
+      if (useLocalStorage) {
         const newSolve: Solve = {
           ...newSolveData,
           id: crypto.randomUUID(),
@@ -133,36 +139,36 @@ export function useSolves() {
       }
 
       try {
-        const solvesRef = collection(db, 'users', user.uid, 'solves')
-        const docRef = await addDoc(solvesRef, newSolveData)
+        const solvesRef = collection(db!, 'users', user!.uid, 'solves')
+        const docRef = await addDoc(solvesRef, cleanData)
         return { ...newSolveData, id: docRef.id } as Solve
       } catch (error) {
         console.error('Failed to add solve to Firestore:', error)
         return null
       }
     },
-    [user]
+    [user, useLocalStorage]
   )
 
   const deleteSolve = useCallback(
     async (id: string) => {
-      if (!user) {
+      if (useLocalStorage) {
         setSolves((prev) => prev.filter((s) => s.id !== id))
         return
       }
 
       try {
-        await deleteDoc(doc(db, 'users', user.uid, 'solves', id))
+        await deleteDoc(doc(db!, 'users', user!.uid, 'solves', id))
       } catch (error) {
         console.error('Failed to delete solve from Firestore:', error)
       }
     },
-    [user]
+    [user, useLocalStorage]
   )
 
   const updateSolve = useCallback(
     async (id: string, updates: Partial<Solve>) => {
-      if (!user) {
+      if (useLocalStorage) {
         setSolves((prev) =>
           prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
         )
@@ -170,42 +176,42 @@ export function useSolves() {
       }
 
       try {
-        await updateDoc(doc(db, 'users', user.uid, 'solves', id), updates)
+        await updateDoc(doc(db!, 'users', user!.uid, 'solves', id), updates)
       } catch (error) {
         console.error('Failed to update solve in Firestore:', error)
       }
     },
-    [user]
+    [user, useLocalStorage]
   )
 
   const clearAll = useCallback(async () => {
-    if (!user) {
+    if (useLocalStorage) {
       setSolves([])
       return
     }
 
     try {
-      const batch = writeBatch(db)
+      const batch = writeBatch(db!)
       for (const solve of solves) {
-        batch.delete(doc(db, 'users', user.uid, 'solves', solve.id))
+        batch.delete(doc(db!, 'users', user!.uid, 'solves', solve.id))
       }
       await batch.commit()
     } catch (error) {
       console.error('Failed to clear solves from Firestore:', error)
     }
-  }, [user, solves])
+  }, [user, useLocalStorage, solves])
 
   const getStats = useCallback(() => calculateStats(solves), [solves])
 
   const migrateLocalToCloud = useCallback(async () => {
-    if (!user) return { success: false, count: 0 }
+    if (useLocalStorage) return { success: false, count: 0 }
 
     const localSolves = loadLocalSolves()
     if (localSolves.length === 0) return { success: true, count: 0 }
 
     try {
-      const batch = writeBatch(db)
-      const solvesRef = collection(db, 'users', user.uid, 'solves')
+      const batch = writeBatch(db!)
+      const solvesRef = collection(db!, 'users', user!.uid, 'solves')
 
       for (const solve of localSolves) {
         const { id, ...solveData } = solve
@@ -220,7 +226,7 @@ export function useSolves() {
       console.error('Failed to migrate solves to cloud:', error)
       return { success: false, count: 0 }
     }
-  }, [user])
+  }, [user, useLocalStorage])
 
   return {
     solves,
@@ -231,6 +237,6 @@ export function useSolves() {
     clearAll,
     getStats,
     migrateLocalToCloud,
-    isCloudSync: !!user,
+    isCloudSync: !useLocalStorage,
   }
 }

@@ -49,7 +49,7 @@ export function ManualTimerDisplay({ status, time, onConnect }: ManualTimerDispl
             className="text-xs tracking-wide md:text-sm"
             style={{ color: 'var(--theme-sub)' }}
           >
-            {status === 'idle' && <><span className="md:hidden">tap to start</span><span className="hidden md:inline">hold space to start</span></>}
+            {status === 'idle' && <><span className="md:hidden">hold to start</span><span className="hidden md:inline">hold space to start</span></>}
             {status === 'holding' && 'keep holding...'}
             {status === 'ready' && 'release to start!'}
             {status === 'running' && <><span className="md:hidden">tap to stop</span><span className="hidden md:inline">press any key to stop</span></>}

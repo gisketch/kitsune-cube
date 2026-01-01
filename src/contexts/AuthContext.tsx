@@ -11,11 +11,12 @@ import {
   signOut,
   type User,
 } from 'firebase/auth'
-import { auth, googleProvider } from '@/lib/firebase'
+import { auth, googleProvider, isOfflineMode } from '@/lib/firebase'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
+  isOffline: boolean
   signInWithGoogle: () => Promise<void>
   logout: () => Promise<void>
 }
@@ -24,9 +25,14 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isOfflineMode)
 
   useEffect(() => {
+    if (isOfflineMode || !auth) {
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
@@ -35,6 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = async () => {
+    if (isOfflineMode || !auth || !googleProvider) {
+      console.warn('Firebase not configured - running in offline mode')
+      return
+    }
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (error) {
@@ -44,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
+    if (isOfflineMode || !auth) return
     try {
       await signOut(auth)
     } catch (error) {
@@ -53,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, loading, isOffline: isOfflineMode, signInWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   )

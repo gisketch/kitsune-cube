@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, isOfflineMode } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateSolveXP, getLevelFromXP } from '@/lib/experience'
 
@@ -49,8 +49,10 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const docInitialized = useRef(false)
 
+  const useLocalStorage = isOfflineMode || !user || !db
+
   useEffect(() => {
-    if (!user) {
+    if (useLocalStorage) {
       setTotalXP(loadLocalXP())
       setLoading(false)
       docInitialized.current = false
@@ -58,7 +60,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     }
 
     docInitialized.current = false
-    const userDocRef = doc(db, 'users', user.uid)
+    const userDocRef = doc(db!, 'users', user!.uid)
 
     const initializeAndListen = async () => {
       try {
@@ -97,25 +99,25 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     )
 
     return unsubscribe
-  }, [user])
+  }, [user, useLocalStorage])
 
   useEffect(() => {
-    if (!user && !loading) {
+    if (useLocalStorage && !loading) {
       saveLocalXP(totalXP)
     }
-  }, [totalXP, user, loading])
+  }, [totalXP, useLocalStorage, loading])
 
   const addXP = useCallback(
     async (timeMs: number, isManual: boolean): Promise<number> => {
       const xpGained = calculateSolveXP(timeMs, isManual)
 
-      if (!user) {
+      if (useLocalStorage) {
         setTotalXP((prev) => prev + xpGained)
         return xpGained
       }
 
       try {
-        const userDocRef = doc(db, 'users', user.uid)
+        const userDocRef = doc(db!, 'users', user!.uid)
         
         const userDoc = await getDoc(userDocRef)
         if (!userDoc.exists()) {
@@ -135,7 +137,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
         return xpGained
       }
     },
-    [user]
+    [user, useLocalStorage]
   )
 
   const getXPData = useCallback((): UserXPData => {

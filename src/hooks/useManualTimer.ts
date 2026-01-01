@@ -97,13 +97,17 @@ export function useManualTimer({ enabled = true, onNextScramble }: UseManualTime
     window.addEventListener('keyup', handleKeyUp)
     window.addEventListener('keydown', handleAnyKeyDown)
 
-    const handleTouchStart = () => {
+    const handleTouchStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('header, footer, nav, [data-no-timer]')) return
+
       const currentStatus = statusRef.current
 
       if (currentStatus === 'idle') {
-        setStatus('running')
-        startTimeRef.current = Date.now()
-        animationFrameRef.current = requestAnimationFrame(updateTime)
+        setStatus('holding')
+        holdTimeoutRef.current = setTimeout(() => {
+          setStatus('ready')
+        }, HOLD_THRESHOLD)
       } else if (currentStatus === 'running') {
         cancelAnimationFrame(animationFrameRef.current)
         const finalTime = Date.now() - startTimeRef.current
@@ -116,13 +120,31 @@ export function useManualTimer({ enabled = true, onNextScramble }: UseManualTime
       }
     }
 
+    const handleTouchEnd = () => {
+      const currentStatus = statusRef.current
+
+      if (currentStatus === 'holding') {
+        if (holdTimeoutRef.current) {
+          clearTimeout(holdTimeoutRef.current)
+          holdTimeoutRef.current = null
+        }
+        setStatus('idle')
+      } else if (currentStatus === 'ready') {
+        startTimeRef.current = Date.now()
+        setStatus('running')
+        animationFrameRef.current = requestAnimationFrame(updateTime)
+      }
+    }
+
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
       window.removeEventListener('keydown', handleAnyKeyDown)
       window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
       cancelAnimationFrame(animationFrameRef.current)
       if (holdTimeoutRef.current) {
         clearTimeout(holdTimeoutRef.current)

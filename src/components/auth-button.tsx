@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LogIn, LogOut, Cloud, CloudOff, Loader2 } from 'lucide-react'
+import { LogIn, LogOut, Cloud, CloudOff, Loader2, WifiOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface AuthButtonProps {
@@ -8,7 +8,7 @@ interface AuthButtonProps {
 }
 
 export function AuthButton({ isCloudSync }: AuthButtonProps) {
-  const { user, loading, signInWithGoogle, logout } = useAuth()
+  const { user, loading, isOffline, signInWithGoogle, logout } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   if (loading) {
@@ -21,6 +21,21 @@ export function AuthButton({ isCloudSync }: AuthButtonProps) {
           className="h-4 w-4 animate-spin"
           style={{ color: 'var(--theme-sub)' }}
         />
+      </div>
+    )
+  }
+
+  if (isOffline) {
+    return (
+      <div
+        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium"
+        style={{
+          backgroundColor: 'var(--theme-subAlt)',
+          color: 'var(--theme-sub)',
+        }}
+      >
+        <WifiOff className="h-4 w-4" />
+        <span className="hidden sm:inline">Offline Mode</span>
       </div>
     )
   }

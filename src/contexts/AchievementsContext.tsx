@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { db, isOfflineMode } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { ACHIEVEMENTS } from '@/lib/achievements'
 import type {
@@ -104,8 +104,10 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
   const [prestige, setPrestige] = useState<PrestigeData>(DEFAULT_PRESTIGE)
   const [loading, setLoading] = useState(true)
 
+  const useLocalStorage = isOfflineMode || !user || !db
+
   useEffect(() => {
-    if (!user) {
+    if (useLocalStorage) {
       setAchievements(loadLocal(STORAGE_KEY_ACHIEVEMENTS, []))
       setStats(loadLocal(STORAGE_KEY_STATS, DEFAULT_STATS))
       setStreak(loadLocal(STORAGE_KEY_STREAK, DEFAULT_STREAK))
@@ -114,7 +116,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const userDocRef = doc(db, 'users', user.uid)
+    const userDocRef = doc(db!, 'users', user!.uid)
 
     const initializeDoc = async () => {
       try {
@@ -153,16 +155,16 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
     )
 
     return unsubscribe
-  }, [user])
+  }, [user, useLocalStorage])
 
   useEffect(() => {
-    if (!user && !loading) {
+    if (useLocalStorage && !loading) {
       saveLocal(STORAGE_KEY_ACHIEVEMENTS, achievements)
       saveLocal(STORAGE_KEY_STATS, stats)
       saveLocal(STORAGE_KEY_STREAK, streak)
       saveLocal(STORAGE_KEY_PRESTIGE, prestige)
     }
-  }, [achievements, stats, streak, prestige, user, loading])
+  }, [achievements, stats, streak, prestige, useLocalStorage, loading])
 
   const recordSolve = useCallback(async () => {
     const today = getTodayDateString()
@@ -196,14 +198,14 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
         streakMultiplier: getStreakMultiplier(newStreak),
       }
 
-      if (user) {
-        const userDocRef = doc(db, 'users', user.uid)
+      if (!useLocalStorage) {
+        const userDocRef = doc(db!, 'users', user!.uid)
         setDoc(userDocRef, { streak: newData }, { merge: true }).catch(console.error)
       }
 
       return newData
     })
-  }, [user])
+  }, [user, useLocalStorage])
 
   const checkAndUpdateAchievements = useCallback(
     async (newStats: Partial<UserStats>): Promise<AchievementUnlock[]> => {
@@ -243,8 +245,8 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
       setAchievements(updatedAchievements)
 
-      if (user) {
-        const userDocRef = doc(db, 'users', user.uid)
+      if (!useLocalStorage) {
+        const userDocRef = doc(db!, 'users', user!.uid)
         await setDoc(userDocRef, { 
           achievements: updatedAchievements, 
           stats: updatedStats 
@@ -253,7 +255,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
       return unlocks
     },
-    [user, stats, achievements]
+    [user, stats, achievements, useLocalStorage]
   )
 
   const getPrestigeMultiplier = useCallback(() => {
