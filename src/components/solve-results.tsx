@@ -584,6 +584,7 @@ function MobileCFOPBreakdown({
   ollDuration,
   pllDuration,
   displayMode,
+  onDisplayModeChange,
   goals,
 }: {
   crossMoves: number
@@ -595,6 +596,7 @@ function MobileCFOPBreakdown({
   ollDuration: number
   pllDuration: number
   displayMode: DisplayMode
+  onDisplayModeChange: (mode: DisplayMode) => void
   goals?: { cross?: PhaseGoal; f2l?: PhaseGoal; oll?: PhaseGoal; pll?: PhaseGoal }
 }) {
   const maxMoves = Math.max(crossMoves, f2lMoves, ollMoves, pllMoves, 1)
@@ -608,21 +610,70 @@ function MobileCFOPBreakdown({
   ]
 
   return (
-    <div className="flex w-full flex-col gap-1.5 md:hidden">
-      {phases.map((phase) => (
-        <HorizontalBar
-          key={phase.label}
-          label={phase.label}
-          moves={phase.moves}
-          recognitionRatio={phase.recognitionRatio}
-          maxMoves={maxMoves}
-          maxDuration={maxDuration}
-          duration={phase.duration}
-          phaseColor={`var(${phase.colorVar})`}
-          goal={phase.goal}
-          displayMode={displayMode}
-        />
-      ))}
+    <div className="flex w-full flex-col gap-2 md:hidden">
+      <div className="flex items-center justify-between">
+        <div
+          className="flex items-center gap-3 text-[10px]"
+          style={{ color: 'var(--theme-sub)' }}
+        >
+          <div className="flex items-center gap-1">
+            <div
+              className="h-1.5 w-3 rounded-sm opacity-40"
+              style={{ backgroundColor: 'var(--theme-text)' }}
+            />
+            <span>rec</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div
+              className="h-1.5 w-3 rounded-sm opacity-90"
+              style={{ backgroundColor: 'var(--theme-text)' }}
+            />
+            <span>exec</span>
+          </div>
+        </div>
+        <div className="flex rounded overflow-hidden" style={{ backgroundColor: 'var(--theme-subAlt)' }}>
+          <button
+            onClick={() => onDisplayModeChange('moves')}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs transition-colors"
+            style={{
+              backgroundColor: displayMode === 'moves' ? 'var(--theme-accent)' : 'transparent',
+              color: displayMode === 'moves' ? 'var(--theme-bg)' : 'var(--theme-sub)',
+            }}
+            aria-label="Show move count"
+            aria-pressed={displayMode === 'moves'}
+          >
+            <Hash className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => onDisplayModeChange('time')}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs transition-colors"
+            style={{
+              backgroundColor: displayMode === 'time' ? 'var(--theme-accent)' : 'transparent',
+              color: displayMode === 'time' ? 'var(--theme-bg)' : 'var(--theme-sub)',
+            }}
+            aria-label="Show time"
+            aria-pressed={displayMode === 'time'}
+          >
+            <Clock className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {phases.map((phase) => (
+          <HorizontalBar
+            key={phase.label}
+            label={phase.label}
+            moves={phase.moves}
+            recognitionRatio={phase.recognitionRatio}
+            maxMoves={maxMoves}
+            maxDuration={maxDuration}
+            duration={phase.duration}
+            phaseColor={`var(${phase.colorVar})`}
+            goal={phase.goal}
+            displayMode={displayMode}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -1582,6 +1633,7 @@ export function SolveResults({
             ollDuration={ollDuration}
             pllDuration={pllDuration}
             displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
             goals={{
               cross: goals.cross,
               f2l: goals.f2l,
