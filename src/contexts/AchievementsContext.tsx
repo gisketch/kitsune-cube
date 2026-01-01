@@ -35,6 +35,8 @@ const DEFAULT_STATS: UserStats = {
   totalSolves: 0,
   totalMoves: 0,
   totalRotationDegrees: 0,
+  avgSolveTime: null,
+  bestSolveTime: null,
   avgCross: null,
   avgF2L: null,
   avgOLL: null,

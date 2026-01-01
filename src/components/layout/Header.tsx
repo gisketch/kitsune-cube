@@ -101,11 +101,10 @@ export function Header({
               height="24"
               viewBox="0 0 100 100"
               xmlns="http://www.w3.org/2000/svg"
-              style={{ fill: 'var(--theme-bg)' }}
             >
-              <path d="M80 40 L95 5 L55 40 Z" />
-              <path d="M20 40 L5 5 L45 40 Z" />
-              <path d="M50 95 L20 40 L80 40 Z" />
+              <path d="M25 42 L35 22 L45 42 Z" style={{ fill: 'var(--theme-bg)' }} />
+              <path d="M55 42 L65 22 L75 42 Z" style={{ fill: 'var(--theme-bg)' }} />
+              <path d="M25 42 H75 V65 L50 90 L25 65 Z" style={{ fill: 'var(--theme-bg)' }} />
             </svg>
           </div>
           <span>Kitsune Cube</span>
@@ -124,11 +123,10 @@ export function Header({
               height="16"
               viewBox="0 0 100 100"
               xmlns="http://www.w3.org/2000/svg"
-              style={{ fill: 'var(--theme-bg)' }}
             >
-              <path d="M80 40 L95 5 L55 40 Z" />
-              <path d="M20 40 L5 5 L45 40 Z" />
-              <path d="M50 95 L20 40 L80 40 Z" />
+              <path d="M25 42 L35 22 L45 42 Z" style={{ fill: 'var(--theme-bg)' }} />
+              <path d="M55 42 L65 22 L75 42 Z" style={{ fill: 'var(--theme-bg)' }} />
+              <path d="M25 42 H75 V65 L50 90 L25 65 Z" style={{ fill: 'var(--theme-bg)' }} />
             </svg>
           </div>
           <span

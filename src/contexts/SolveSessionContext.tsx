@@ -191,9 +191,19 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
         addXP(time, isManual)
         recordSolve()
 
+        const newTotalSolves = userStats.totalSolves + 1
+        const currentAvg = userStats.avgSolveTime ?? 0
+        const newAvgSolveTime = currentAvg > 0 
+          ? Math.round((currentAvg * userStats.totalSolves + time) / newTotalSolves)
+          : time
+        const currentBestTime = userStats.bestSolveTime ?? Infinity
+        const newBestSolveTime = Math.min(currentBestTime === Infinity ? time : currentBestTime, time)
+
         const statsUpdate: Record<string, number> = {
-          totalSolves: userStats.totalSolves + 1,
+          totalSolves: newTotalSolves,
           totalMoves: userStats.totalMoves + solution.length,
+          avgSolveTime: newAvgSolveTime,
+          bestSolveTime: newBestSolveTime,
         }
 
         if (analysis) {
