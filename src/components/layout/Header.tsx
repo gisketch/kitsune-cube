@@ -21,6 +21,7 @@ import {
   CloudOff,
 } from 'lucide-react'
 import { ProfileMenu } from '@/components/profile-menu'
+import { AuthModal } from '@/components/auth-modal'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface HeaderProps {
@@ -53,8 +54,9 @@ export function Header({
   onCalibrate,
   isCloudSync,
 }: HeaderProps) {
-  const { user, signInWithGoogle, logout } = useAuth()
+  const { user, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -212,7 +214,7 @@ export function Header({
                 </div>
               ) : (
                 <button
-                  onClick={() => { signInWithGoogle(); setIsMobileMenuOpen(false) }}
+                  onClick={() => { setShowAuthModal(true); setIsMobileMenuOpen(false) }}
                   className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
                   style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-text)' }}
                 >
@@ -327,6 +329,7 @@ export function Header({
           </motion.div>
         )}
       </AnimatePresence>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   )
 }

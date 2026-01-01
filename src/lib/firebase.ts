@@ -20,6 +20,17 @@ const hasValidConfig = Boolean(
 
 export const isOfflineMode = !hasValidConfig
 
+export function isEmbeddedBrowser(): boolean {
+  const ua = navigator.userAgent.toLowerCase()
+  return (
+    ua.includes('bluefy') ||
+    ua.includes('webview') ||
+    ua.includes('wv') ||
+    (ua.includes('iphone') && !ua.includes('safari')) ||
+    (ua.includes('android') && ua.includes('version/'))
+  )
+}
+
 let app: FirebaseApp | null = null
 let auth: Auth | null = null
 let db: Firestore | null = null

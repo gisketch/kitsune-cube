@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LogIn, LogOut, Cloud, CloudOff, Loader2, WifiOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { AuthModal } from '@/components/auth-modal'
 
 interface AuthButtonProps {
   isCloudSync?: boolean
 }
 
 export function AuthButton({ isCloudSync }: AuthButtonProps) {
-  const { user, loading, isOffline, signInWithGoogle, logout } = useAuth()
+  const { user, loading, isOffline, logout } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   if (loading) {
     return (
@@ -42,17 +44,20 @@ export function AuthButton({ isCloudSync }: AuthButtonProps) {
 
   if (!user) {
     return (
-      <button
-        onClick={signInWithGoogle}
-        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:scale-105"
-        style={{
-          backgroundColor: 'var(--theme-subAlt)',
-          color: 'var(--theme-text)',
-        }}
-      >
-        <LogIn className="h-4 w-4" />
-        <span className="hidden sm:inline">Sign in</span>
-      </button>
+      <>
+        <button
+          onClick={() => setShowAuthModal(true)}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:scale-105"
+          style={{
+            backgroundColor: 'var(--theme-subAlt)',
+            color: 'var(--theme-text)',
+          }}
+        >
+          <LogIn className="h-4 w-4" />
+          <span className="hidden sm:inline">Sign in</span>
+        </button>
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      </>
     )
   }
 

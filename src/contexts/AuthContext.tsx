@@ -8,16 +8,25 @@ import {
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut,
   type User,
 } from 'firebase/auth'
-import { auth, googleProvider, isOfflineMode } from '@/lib/firebase'
+import { auth, googleProvider, isOfflineMode, isEmbeddedBrowser } from '@/lib/firebase'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
   isOffline: boolean
   signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  registerWithEmail: (email: string, password: string, displayName?: string) => Promise<void>
+  resetPassword: (email: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -33,6 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect sign-in error:', error)
+    })
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
@@ -46,11 +59,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     try {
-      await signInWithPopup(auth, googleProvider)
+      if (isEmbeddedBrowser()) {
+        await signInWithRedirect(auth, googleProvider)
+      } else {
+        await signInWithPopup(auth, googleProvider)
+      }
     } catch (error) {
       console.error('Failed to sign in with Google:', error)
       throw error
     }
+  }
+
+  const signInWithEmail = async (email: string, password: string) => {
+    if (isOfflineMode || !auth) {
+      console.warn('Firebase not configured - running in offline mode')
+      return
+    }
+    await signInWithEmailAndPassword(auth, email, password)
+  }
+
+  const registerWithEmail = async (email: string, password: string, displayName?: string) => {
+    if (isOfflineMode || !auth) {
+      console.warn('Firebase not configured - running in offline mode')
+      return
+    }
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    if (displayName && result.user) {
+      await updateProfile(result.user, { displayName })
+    }
+  }
+
+  const resetPassword = async (email: string) => {
+    if (isOfflineMode || !auth) {
+      console.warn('Firebase not configured - running in offline mode')
+      return
+    }
+    await sendPasswordResetEmail(auth, email)
   }
 
   const logout = async () => {
@@ -64,7 +108,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, isOffline: isOfflineMode, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      isOffline: isOfflineMode, 
+      signInWithGoogle, 
+      signInWithEmail,
+      registerWithEmail,
+      resetPassword,
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   )
