@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
-import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2 } from 'lucide-react'
+import { useMemo, useState, useRef } from 'react'
+import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2, Camera } from 'lucide-react'
 import { updateProfile } from 'firebase/auth'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import type { Solve } from '@/hooks/useSolves'
 import { useAuth } from '@/contexts/AuthContext'
 import { useExperience } from '@/contexts/ExperienceContext'
@@ -8,6 +9,7 @@ import { useAchievements } from '@/contexts/AchievementsContext'
 import { SolvesList } from '@/components/solves-list'
 import { SolveChart } from '@/components/solve-chart'
 import { getLevelTitle } from '@/types/achievements'
+import { storage, isOfflineMode } from '@/lib/firebase'
 
 interface AccountPageProps {
   solves: Solve[]
@@ -460,10 +462,12 @@ function ActivityCalendar({ solves }: { solves: Solve[] }) {
 
 function ProfileHeader() {
   const { user } = useAuth()
-  const { getXPData } = useExperience()
+  const { getXPData, loading: xpLoading } = useExperience()
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState(user?.displayName || 'Guest')
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const xpData = getXPData()
 
@@ -486,29 +490,86 @@ function ProfileHeader() {
     setIsEditing(false)
   }
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user || !storage || isOfflineMode) return
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      console.error('Invalid file type')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('File too large (max 5MB)')
+      return
+    }
+
+    setIsUploadingPhoto(true)
+    try {
+      const storageRef = ref(storage, `profile-photos/${user.uid}`)
+      await uploadBytes(storageRef, file)
+      const photoURL = await getDownloadURL(storageRef)
+      await updateProfile(user, { photoURL })
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to upload photo:', error)
+    } finally {
+      setIsUploadingPhoto(false)
+    }
+  }
+
   return (
     <div
       className="flex flex-col gap-3 rounded-xl p-4"
       style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
     >
       <div className="flex items-center gap-4">
-        {user?.photoURL ? (
-          <img
-            src={user.photoURL}
-            alt={user.displayName || 'User'}
-            className="h-16 w-16 rounded-full"
-          />
-        ) : (
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold"
-            style={{
-              backgroundColor: 'var(--theme-accent)',
-              color: 'var(--theme-bg)',
-            }}
-          >
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <div className="relative">
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt={user.displayName || 'User'}
+              className="h-16 w-16 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold"
+              style={{
+                backgroundColor: 'var(--theme-accent)',
+                color: 'var(--theme-bg)',
+              }}
+            >
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          {user && !isOfflineMode && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50"
+                style={{
+                  backgroundColor: 'var(--theme-accent)',
+                  color: 'var(--theme-bg)',
+                }}
+              >
+                {isUploadingPhoto ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </button>
+            </>
+          )}
+        </div>
 
         <div className="flex-1">
           {isEditing ? (
@@ -576,17 +637,17 @@ function ProfileHeader() {
             color: 'var(--theme-bg)',
           }}
         >
-          {xpData.level}
+          {xpLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : xpData.level}
         </div>
       </div>
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between text-xs">
           <span style={{ color: 'var(--theme-sub)' }}>
-            Level {xpData.level}
+            Level {xpLoading ? '-' : xpData.level}
           </span>
           <span style={{ color: 'var(--theme-sub)' }}>
-            {xpData.currentXP} / {xpData.xpForNextLevel} XP
+            {xpLoading ? '-' : xpData.currentXP} / {xpLoading ? '-' : xpData.xpForNextLevel} XP
           </span>
         </div>
         <div
@@ -597,7 +658,7 @@ function ProfileHeader() {
             className="h-full rounded-full transition-all duration-300"
             style={{
               backgroundColor: 'var(--theme-accent)',
-              width: `${Math.min(xpData.progress * 100, 100)}%`,
+              width: xpLoading ? '0%' : `${Math.min(xpData.progress * 100, 100)}%`,
             }}
           />
         </div>
@@ -605,7 +666,7 @@ function ProfileHeader() {
           className="text-right text-[10px]"
           style={{ color: 'var(--theme-sub)' }}
         >
-          Total: {xpData.totalXP} XP
+          Total: {xpLoading ? '-' : xpData.totalXP} XP
         </div>
       </div>
     </div>

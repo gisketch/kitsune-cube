@@ -75,6 +75,7 @@ function App() {
     lastMoveCount,
     lastScramble,
     lastAnalysis,
+    isRepeatedScramble,
     manualTimerEnabled,
     setManualTimerEnabled,
     setRepeatedScramble,
@@ -511,6 +512,7 @@ function App() {
                     time={timer.time}
                     isManual={manualTimerEnabled}
                     manualScramble={manualScramble}
+                    isRepeatedScramble={isRepeatedScramble}
                   />
 
                   {manualTimerEnabled ? (

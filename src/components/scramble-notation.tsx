@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { AlertTriangle } from 'lucide-react'
 import { formatTime } from '@/lib/format'
 import type {
   ScrambleTrackerState,
@@ -12,6 +13,7 @@ interface ScrambleNotationProps {
   time: number
   isManual?: boolean
   manualScramble?: string
+  isRepeatedScramble?: boolean
 }
 
 function MoveNotation({
@@ -70,7 +72,7 @@ function RecoveryMoveNotation({ move }: { move: ParsedMove }) {
   )
 }
 
-export function ScrambleNotation({ trackerState, timerStatus, time, isManual, manualScramble }: ScrambleNotationProps) {
+export function ScrambleNotation({ trackerState, timerStatus, time, isManual, manualScramble, isRepeatedScramble }: ScrambleNotationProps) {
   const { status, moves, originalScramble, recoveryMoves, shouldResetCube } = trackerState
   const isScrambling = status === 'scrambling'
   const isDiverged = status === 'diverged'
@@ -79,10 +81,23 @@ export function ScrambleNotation({ trackerState, timerStatus, time, isManual, ma
   const isRunning = timerStatus === 'running'
   const isStopped = timerStatus === 'stopped'
 
+  const repeatedWarning = isRepeatedScramble && !isRunning && !isStopped && (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center justify-center gap-2 text-xs mb-2 text-center"
+      style={{ color: 'var(--theme-error)' }}
+    >
+      <AlertTriangle className="hidden md:block h-4 w-4 flex-shrink-0" />
+      <span>Repeated scramble — XP and achievements will not be awarded</span>
+    </motion.div>
+  )
+
   if (isManual && manualScramble) {
     const manualMoves = manualScramble.split(' ').filter(Boolean)
     return (
       <div className="flex min-h-[60px] flex-col items-center justify-center px-4 md:min-h-[80px] md:px-0">
+        {repeatedWarning}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -106,6 +121,7 @@ export function ScrambleNotation({ trackerState, timerStatus, time, isManual, ma
 
   return (
     <div className="flex min-h-[60px] flex-col items-center justify-center px-4 md:min-h-[80px] md:px-0">
+      {repeatedWarning}
       <AnimatePresence mode="wait">
         {!originalScramble && status === 'idle' && (
           <motion.div

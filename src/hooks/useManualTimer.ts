@@ -99,11 +99,13 @@ export function useManualTimer({ enabled = true, onNextScramble }: UseManualTime
 
     const handleTouchStart = (e: TouchEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest('header, footer, nav, [data-no-timer]')) return
+      const isInteractiveElement = target.closest('button, a, input, select, textarea, [role="button"], [data-no-timer]')
+      if (target.closest('header, footer, nav')) return
 
       const currentStatus = statusRef.current
 
       if (currentStatus === 'idle') {
+        if (isInteractiveElement) return
         setStatus('holding')
         holdTimeoutRef.current = setTimeout(() => {
           setStatus('ready')
@@ -114,6 +116,7 @@ export function useManualTimer({ enabled = true, onNextScramble }: UseManualTime
         setTime(finalTime)
         setStatus('stopped')
       } else if (currentStatus === 'stopped') {
+        if (isInteractiveElement) return
         setStatus('idle')
         setTime(0)
         onNextScrambleRef.current?.()

@@ -15,9 +15,13 @@ import {
   Menu,
   Trophy,
   Users,
+  LogIn,
+  LogOut,
+  Cloud,
+  CloudOff,
 } from 'lucide-react'
 import { ProfileMenu } from '@/components/profile-menu'
-import { AuthButton } from '@/components/auth-button'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface HeaderProps {
   onNavigate: (page: 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings') => void
@@ -33,6 +37,8 @@ interface HeaderProps {
 const menuItems = [
   { id: 'timer' as const, label: 'Timer', icon: RotateCcw },
   { id: 'account' as const, label: 'Account', icon: UserCircle },
+  { id: 'achievements' as const, label: 'Achievements', icon: Trophy },
+  { id: 'leaderboard' as const, label: 'Leaderboard', icon: Users },
   { id: 'simulator' as const, label: 'Simulator', icon: FlaskConical },
   { id: 'settings' as const, label: 'Settings', icon: Settings },
 ]
@@ -47,6 +53,7 @@ export function Header({
   onCalibrate,
   isCloudSync,
 }: HeaderProps) {
+  const { user, signInWithGoogle, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -70,7 +77,7 @@ export function Header({
 
   const BatteryIcon = getBatteryIcon()
 
-  const handleMobileNavigate = (page: 'timer' | 'account' | 'simulator' | 'settings') => {
+  const handleMobileNavigate = (page: 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings') => {
     onNavigate(page)
     setIsMobileMenuOpen(false)
   }
@@ -178,7 +185,41 @@ export function Header({
             style={{ backgroundColor: 'var(--theme-bg)' }}
           >
             <div className="flex items-center justify-between px-4 py-3">
-              <AuthButton isCloudSync={isCloudSync} />
+              {user ? (
+                <div className="flex items-center gap-2">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || 'User'} className="h-8 w-8 rounded-full" />
+                  ) : (
+                    <div
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"
+                      style={{ backgroundColor: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+                    >
+                      {user.displayName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                      {user.displayName?.split(' ')[0] || 'Account'}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--theme-sub)' }}>
+                      {isCloudSync ? (
+                        <><Cloud className="h-3 w-3" style={{ color: 'var(--theme-accent)' }} /> Cloud sync</>
+                      ) : (
+                        <><CloudOff className="h-3 w-3" /> Local only</>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { signInWithGoogle(); setIsMobileMenuOpen(false) }}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
+                  style={{ backgroundColor: 'var(--theme-subAlt)', color: 'var(--theme-text)' }}
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign in</span>
+                </button>
+              )}
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="rounded-lg p-2"
@@ -188,7 +229,7 @@ export function Header({
               </button>
             </div>
 
-            <div className="flex flex-1 flex-col gap-2 px-4 py-6">
+            <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 py-4">
               <div
                 className="mb-2 text-xs font-medium uppercase tracking-wider"
                 style={{ color: 'var(--theme-sub)' }}
@@ -199,18 +240,18 @@ export function Header({
                 <button
                   key={item.id}
                   onClick={() => handleMobileNavigate(item.id)}
-                  className="flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors"
                   style={{
                     color: 'var(--theme-text)',
                     backgroundColor: 'var(--theme-bgSecondary)',
                   }}
                 >
-                  <item.icon className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} />
+                  <item.icon className="h-4 w-4" style={{ color: 'var(--theme-accent)' }} />
                   <span>{item.label}</span>
                 </button>
               ))}
 
-              <div className="my-4 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
+              <div className="my-2 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
 
               <div
                 className="mb-2 text-xs font-medium uppercase tracking-wider"
@@ -224,13 +265,13 @@ export function Header({
                   setIsMobileMenuOpen(false)
                 }}
                 disabled={isConnecting}
-                className="flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors"
+                className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors"
                 style={{
                   color: isConnected ? '#4ade80' : 'var(--theme-text)',
                   backgroundColor: 'var(--theme-bgSecondary)',
                 }}
               >
-                <Bluetooth className={`h-5 w-5 ${isConnecting ? 'animate-pulse' : ''}`} />
+                <Bluetooth className={`h-4 w-4 ${isConnecting ? 'animate-pulse' : ''}`} />
                 <span>
                   {isConnected ? 'Disconnect' : isConnecting ? 'Connecting...' : 'Connect Cube'}
                 </span>
@@ -238,13 +279,13 @@ export function Header({
 
               {isConnected && batteryLevel !== null && (
                 <div
-                  className="flex items-center gap-4 rounded-lg px-4 py-4 text-lg"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm"
                   style={{
                     color: batteryLevel <= 20 ? 'var(--theme-error)' : 'var(--theme-sub)',
                     backgroundColor: 'var(--theme-bgSecondary)',
                   }}
                 >
-                  <BatteryIcon className="h-5 w-5" />
+                  <BatteryIcon className="h-4 w-4" />
                   <span>Battery: {batteryLevel}%</span>
                 </div>
               )}
@@ -255,15 +296,32 @@ export function Header({
                     onCalibrate()
                     setIsMobileMenuOpen(false)
                   }}
-                  className="flex items-center gap-4 rounded-lg px-4 py-4 text-lg transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors"
                   style={{
                     color: 'var(--theme-text)',
                     backgroundColor: 'var(--theme-bgSecondary)',
                   }}
                 >
-                  <RotateCcw className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} />
+                  <RotateCcw className="h-4 w-4" style={{ color: 'var(--theme-accent)' }} />
                   <span>Calibrate Cube</span>
                 </button>
+              )}
+
+              {user && (
+                <>
+                  <div className="my-2 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
+                  <button
+                    onClick={() => { logout(); setIsMobileMenuOpen(false) }}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors"
+                    style={{
+                      color: 'var(--theme-error)',
+                      backgroundColor: 'var(--theme-bgSecondary)',
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign out</span>
+                  </button>
+                </>
               )}
             </div>
           </motion.div>

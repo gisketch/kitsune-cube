@@ -15,45 +15,31 @@ interface UserXPData {
 interface ExperienceContextType {
   totalXP: number
   loading: boolean
+  recentXPGain: number | null
   addXP: (timeMs: number, isManual: boolean) => Promise<number>
   getXPData: () => UserXPData
+  clearRecentXPGain: () => void
 }
 
 const ExperienceContext = createContext<ExperienceContextType | null>(null)
-
-const STORAGE_KEY = 'cube-user-xp'
-
-function loadLocalXP(): number {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      return parseInt(stored, 10) || 0
-    }
-  } catch {
-    console.error('Failed to load XP from localStorage')
-  }
-  return 0
-}
-
-function saveLocalXP(xp: number) {
-  try {
-    localStorage.setItem(STORAGE_KEY, String(xp))
-  } catch {
-    console.error('Failed to save XP to localStorage')
-  }
-}
 
 export function ExperienceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [totalXP, setTotalXP] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [recentXPGain, setRecentXPGain] = useState<number | null>(null)
   const docInitialized = useRef(false)
+  const pendingXPRef = useRef<{ timeMs: number; isManual: boolean; resolve: (xp: number) => void }[]>([])
 
-  const useLocalStorage = isOfflineMode || !user || !db
+  const isGuest = isOfflineMode || !user || !db
+
+  const clearRecentXPGain = useCallback(() => {
+    setRecentXPGain(null)
+  }, [])
 
   useEffect(() => {
-    if (useLocalStorage) {
-      setTotalXP(loadLocalXP())
+    if (isGuest) {
+      setTotalXP(0)
       setLoading(false)
       docInitialized.current = false
       return
@@ -99,21 +85,40 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
     )
 
     return unsubscribe
-  }, [user, useLocalStorage])
+  }, [user, isGuest])
 
   useEffect(() => {
-    if (useLocalStorage && !loading) {
-      saveLocalXP(totalXP)
+    if (!loading && !isGuest && pendingXPRef.current.length > 0) {
+      const pending = [...pendingXPRef.current]
+      pendingXPRef.current = []
+      
+      pending.forEach(async ({ timeMs, isManual, resolve }) => {
+        const xpGained = calculateSolveXP(timeMs, isManual)
+        try {
+          const userDocRef = doc(db!, 'users', user!.uid)
+          await updateDoc(userDocRef, { totalXP: increment(xpGained) })
+          resolve(xpGained)
+        } catch (error) {
+          console.error('Failed to add pending XP:', error)
+          resolve(0)
+        }
+      })
     }
-  }, [totalXP, useLocalStorage, loading])
+  }, [loading, isGuest, user])
 
   const addXP = useCallback(
     async (timeMs: number, isManual: boolean): Promise<number> => {
-      const xpGained = calculateSolveXP(timeMs, isManual)
+      if (isGuest) {
+        return 0
+      }
 
-      if (useLocalStorage) {
-        setTotalXP((prev) => prev + xpGained)
-        return xpGained
+      const xpGained = calculateSolveXP(timeMs, isManual)
+      setRecentXPGain(xpGained)
+
+      if (loading) {
+        return new Promise((resolve) => {
+          pendingXPRef.current.push({ timeMs, isManual, resolve })
+        })
       }
 
       try {
@@ -123,8 +128,8 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
         if (!userDoc.exists()) {
           await setDoc(userDocRef, { 
             totalXP: xpGained,
-            displayName: user.displayName || 'Anonymous',
-            photoURL: user.photoURL || null,
+            displayName: user!.displayName || 'Anonymous',
+            photoURL: user!.photoURL || null,
           })
         } else {
           await updateDoc(userDocRef, { totalXP: increment(xpGained) })
@@ -133,11 +138,10 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
         return xpGained
       } catch (error) {
         console.error('Failed to add XP to Firestore:', error)
-        setTotalXP((prev) => prev + xpGained)
-        return xpGained
+        return 0
       }
     },
-    [user, useLocalStorage]
+    [user, isGuest, loading]
   )
 
   const getXPData = useCallback((): UserXPData => {
@@ -149,7 +153,7 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
   }, [totalXP])
 
   return (
-    <ExperienceContext.Provider value={{ totalXP, loading, addXP, getXPData }}>
+    <ExperienceContext.Provider value={{ totalXP, loading, recentXPGain, addXP, getXPData, clearRecentXPGain }}>
       {children}
     </ExperienceContext.Provider>
   )

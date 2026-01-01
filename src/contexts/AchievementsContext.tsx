@@ -31,11 +31,6 @@ interface AchievementsContextType {
 
 const AchievementsContext = createContext<AchievementsContextType | null>(null)
 
-const STORAGE_KEY_ACHIEVEMENTS = 'cube-achievements'
-const STORAGE_KEY_STATS = 'cube-stats'
-const STORAGE_KEY_STREAK = 'cube-streak'
-const STORAGE_KEY_PRESTIGE = 'cube-prestige'
-
 const DEFAULT_STATS: UserStats = {
   totalSolves: 0,
   totalMoves: 0,
@@ -74,24 +69,6 @@ const DEFAULT_PRESTIGE: PrestigeData = {
   permanentMultiplier: 1,
 }
 
-function loadLocal<T>(key: string, defaultValue: T): T {
-  try {
-    const stored = localStorage.getItem(key)
-    if (stored) return JSON.parse(stored)
-  } catch {
-    console.error(`Failed to load ${key} from localStorage`)
-  }
-  return defaultValue
-}
-
-function saveLocal<T>(key: string, value: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    console.error(`Failed to save ${key} to localStorage`)
-  }
-}
-
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0]
 }
@@ -104,14 +81,14 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
   const [prestige, setPrestige] = useState<PrestigeData>(DEFAULT_PRESTIGE)
   const [loading, setLoading] = useState(true)
 
-  const useLocalStorage = isOfflineMode || !user || !db
+  const isGuest = isOfflineMode || !user || !db
 
   useEffect(() => {
-    if (useLocalStorage) {
-      setAchievements(loadLocal(STORAGE_KEY_ACHIEVEMENTS, []))
-      setStats(loadLocal(STORAGE_KEY_STATS, DEFAULT_STATS))
-      setStreak(loadLocal(STORAGE_KEY_STREAK, DEFAULT_STREAK))
-      setPrestige(loadLocal(STORAGE_KEY_PRESTIGE, DEFAULT_PRESTIGE))
+    if (isGuest) {
+      setAchievements([])
+      setStats(DEFAULT_STATS)
+      setStreak(DEFAULT_STREAK)
+      setPrestige(DEFAULT_PRESTIGE)
       setLoading(false)
       return
     }
@@ -155,18 +132,11 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
     )
 
     return unsubscribe
-  }, [user, useLocalStorage])
-
-  useEffect(() => {
-    if (useLocalStorage && !loading) {
-      saveLocal(STORAGE_KEY_ACHIEVEMENTS, achievements)
-      saveLocal(STORAGE_KEY_STATS, stats)
-      saveLocal(STORAGE_KEY_STREAK, streak)
-      saveLocal(STORAGE_KEY_PRESTIGE, prestige)
-    }
-  }, [achievements, stats, streak, prestige, useLocalStorage, loading])
+  }, [user, isGuest])
 
   const recordSolve = useCallback(async () => {
+    if (isGuest) return
+
     const today = getTodayDateString()
     
     setStreak(prev => {
@@ -198,17 +168,19 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
         streakMultiplier: getStreakMultiplier(newStreak),
       }
 
-      if (!useLocalStorage) {
+      if (!isGuest) {
         const userDocRef = doc(db!, 'users', user!.uid)
         setDoc(userDocRef, { streak: newData }, { merge: true }).catch(console.error)
       }
 
       return newData
     })
-  }, [user, useLocalStorage])
+  }, [user, isGuest])
 
   const checkAndUpdateAchievements = useCallback(
     async (newStats: Partial<UserStats>): Promise<AchievementUnlock[]> => {
+      if (isGuest) return []
+
       const updatedStats = { ...stats, ...newStats }
       setStats(updatedStats)
 
@@ -245,7 +217,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
       setAchievements(updatedAchievements)
 
-      if (!useLocalStorage) {
+      if (!isGuest) {
         const userDocRef = doc(db!, 'users', user!.uid)
         await setDoc(userDocRef, { 
           achievements: updatedAchievements, 
@@ -255,7 +227,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
 
       return unlocks
     },
-    [user, stats, achievements, useLocalStorage]
+    [user, stats, achievements, isGuest]
   )
 
   const getPrestigeMultiplier = useCallback(() => {

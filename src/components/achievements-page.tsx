@@ -217,9 +217,9 @@ function CategorySection({ category }: { category: AchievementCategory }) {
 
 function PrestigeSection() {
   const { prestige, streak } = useAchievements()
-  const { getXPData } = useExperience()
+  const { getXPData, loading: xpLoading } = useExperience()
   const xpData = getXPData()
-  const title = getLevelTitle(xpData.level, prestige.stars)
+  const title = xpLoading ? '...' : getLevelTitle(xpData.level, prestige.stars)
 
   return (
     <div
@@ -244,7 +244,9 @@ function PrestigeSection() {
             }
           </div>
           <span className="font-medium text-center" style={{ color: 'var(--theme-text)' }}>{title}</span>
-          <span className="text-xs mt-1" style={{ color: 'var(--theme-sub)' }}>Level {xpData.level}</span>
+          <span className="text-xs mt-1" style={{ color: 'var(--theme-sub)' }}>
+            {xpLoading ? 'Loading...' : `Level ${xpData.level}`}
+          </span>
         </div>
 
         <div className="flex flex-col items-center rounded-lg p-4" style={{ backgroundColor: 'var(--theme-bg)' }}>

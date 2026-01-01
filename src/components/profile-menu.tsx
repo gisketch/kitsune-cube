@@ -54,10 +54,22 @@ export function ProfileMenu({
   onCalibrate,
 }: ProfileMenuProps) {
   const { user, loading, signInWithGoogle, logout } = useAuth()
-  const { getXPData } = useExperience()
+  const { getXPData, loading: xpLoading, recentXPGain, clearRecentXPGain } = useExperience()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [showXPNotification, setShowXPNotification] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const xpData = getXPData()
+
+  useEffect(() => {
+    if (recentXPGain && recentXPGain > 0) {
+      setShowXPNotification(true)
+      const timer = setTimeout(() => {
+        setShowXPNotification(false)
+        clearRecentXPGain()
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [recentXPGain, clearRecentXPGain])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -142,7 +154,11 @@ export function ProfileMenu({
               color: 'var(--theme-bg)',
             }}
           >
-            {xpData.level}
+            {xpLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              xpData.level
+            )}
           </span>
           <ChevronDown
             className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
@@ -157,11 +173,25 @@ export function ProfileMenu({
               className="h-full rounded-full transition-all duration-500"
               style={{
                 backgroundColor: 'var(--theme-accent)',
-                width: `${Math.min(xpData.progress * 100, 100)}%`,
+                width: xpLoading ? '0%' : `${Math.min(xpData.progress * 100, 100)}%`,
               }}
             />
           </div>
         </div>
+        <AnimatePresence>
+          {showXPNotification && recentXPGain && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 4 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.3 }}
+              className="absolute right-3 top-full text-xs font-bold"
+              style={{ color: 'var(--theme-accent)' }}
+            >
+              +{recentXPGain} XP
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
@@ -222,7 +252,7 @@ export function ProfileMenu({
                     signInWithGoogle()
                     setIsDropdownOpen(false)
                   }}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-base transition-colors hover:opacity-80"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
                   style={{ color: 'var(--theme-accent)' }}
                 >
                   <LogIn className="h-4 w-4" />
@@ -245,7 +275,7 @@ export function ProfileMenu({
                 setIsDropdownOpen(false)
               }}
               disabled={isConnecting}
-              className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
               style={{ color: isConnected ? '#4ade80' : 'var(--theme-text)' }}
             >
               <Bluetooth className={`h-4 w-4 ${isConnecting ? 'animate-pulse' : ''}`} />
@@ -256,7 +286,7 @@ export function ProfileMenu({
 
             {isConnected && batteryLevel !== null && (
               <div
-                className="flex items-center gap-3 px-3 py-2 text-base"
+                className="flex items-center gap-2 px-3 py-2 text-sm"
                 style={{ color: batteryLevel <= 20 ? 'var(--theme-error)' : 'var(--theme-sub)' }}
               >
                 <BatteryIcon className="h-4 w-4" />
@@ -270,7 +300,7 @@ export function ProfileMenu({
                   onCalibrate()
                   setIsDropdownOpen(false)
                 }}
-                className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors hover:opacity-80"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
                 style={{ color: 'var(--theme-text)' }}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -294,7 +324,7 @@ export function ProfileMenu({
                   onNavigate(item.id)
                   setIsDropdownOpen(false)
                 }}
-                className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors hover:opacity-80"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
                 style={{ color: 'var(--theme-text)' }}
               >
                 <item.icon className="h-4 w-4" />
@@ -311,7 +341,7 @@ export function ProfileMenu({
                     logout()
                     setIsDropdownOpen(false)
                   }}
-                  className="flex w-full items-center gap-3 px-3 py-2 text-base transition-colors hover:opacity-80"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
                   style={{ color: 'var(--theme-error)' }}
                 >
                   <LogOut className="h-4 w-4" />
