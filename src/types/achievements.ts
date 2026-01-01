@@ -11,6 +11,7 @@ export interface AchievementDefinition {
   id: string
   name: string
   description: string
+  howToAchieve?: string
   category: AchievementCategory
   icon: string
   tiers: AchievementTierConfig[]

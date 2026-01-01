@@ -225,6 +225,32 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           if (analysis.pll.skipped) statsUpdate.pllSkips = userStats.pllSkips + 1
           if (analysis.cross.moves.length <= 8)
             statsUpdate.crossUnder8Moves = userStats.crossUnder8Moves + 1
+
+          const pllTime = analysis.pll.duration
+          if (pllTime && pllTime < 4000) {
+            statsUpdate.pllUnder4s = userStats.pllUnder4s + 1
+            if (pllTime < 3000) statsUpdate.pllUnder3s = userStats.pllUnder3s + 1
+            if (pllTime < 2000) statsUpdate.pllUnder2s = userStats.pllUnder2s + 1
+            if (pllTime < 1500) statsUpdate.pllUnder1_5s = userStats.pllUnder1_5s + 1
+            if (pllTime < 1000) statsUpdate.pllUnder1s = userStats.pllUnder1s + 1
+          }
+
+          const hasNoSkips = !analysis.oll.skipped && !analysis.pll.skipped
+          if (hasNoSkips && time < 15000) {
+            statsUpdate.fullStepSub15 = userStats.fullStepSub15 + 1
+          }
+        }
+
+        if (!isManual && solution.length > 0) {
+          const tps = solution.length / (time / 1000)
+          if (tps > 5) {
+            statsUpdate.tpsOver5Solves = userStats.tpsOver5Solves + 1
+          }
+        }
+
+        const prevSolve = solves[0]
+        if (prevSolve && !prevSolve.dnf && prevSolve.time === time) {
+          statsUpdate.perfectMoveMatches = userStats.perfectMoveMatches + 1
         }
 
         if (!isManual && solution.length > 0 && solution.length <= 20)

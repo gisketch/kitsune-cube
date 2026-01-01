@@ -3,11 +3,13 @@ import {
   Trophy, Star, Flame, Target, Cpu, Puzzle, Zap, 
   Hash, Crown, Rocket, Dumbbell, Footprints, Crosshair,
   Waves, Gauge, Clover, Dices, Sparkles, Medal, Bug, Brain, Gamepad2,
+  HelpCircle,
   type LucideIcon
 } from 'lucide-react'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useExperience } from '@/contexts/ExperienceContext'
 import { ACHIEVEMENTS, getAchievementsByCategory } from '@/lib/achievements'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   TIER_COLORS,
   TIER_ORDER,
@@ -123,70 +125,86 @@ function AchievementCard({ achievement }: { achievement: typeof ACHIEVEMENTS[0] 
   const highestTier = TIER_ORDER.filter(t => unlockedTiers.includes(t)).pop()
 
   return (
-    <div
-      className="rounded-lg p-3 transition-all"
-      style={{
-        backgroundColor: 'var(--theme-bg)',
-        border: isComplete 
-          ? `2px solid ${TIER_COLORS[highestTier || 'bronze']}`
-          : '1px solid var(--theme-subAlt)',
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
-        >
-          {(() => {
-            const IconComponent = ACHIEVEMENT_ICONS[achievement.icon]
-            return IconComponent ? <IconComponent className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} /> : null
-          })()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="font-medium truncate" style={{ color: 'var(--theme-text)' }}>
-              {achievement.name}
-            </h4>
-            {achievement.requiresSmartCube && (
-              <Cpu className="h-3 w-3 shrink-0" style={{ color: 'var(--theme-accent)' }} />
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className="rounded-lg p-3 transition-all cursor-help"
+            style={{
+              backgroundColor: 'var(--theme-bg)',
+              border: isComplete 
+                ? `2px solid ${TIER_COLORS[highestTier || 'bronze']}`
+                : '1px solid var(--theme-subAlt)',
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: 'var(--theme-bgSecondary)' }}
+              >
+                {(() => {
+                  const IconComponent = ACHIEVEMENT_ICONS[achievement.icon]
+                  return IconComponent ? <IconComponent className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} /> : null
+                })()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium truncate" style={{ color: 'var(--theme-text)' }}>
+                    {achievement.name}
+                  </h4>
+                  {achievement.requiresSmartCube && (
+                    <Cpu className="h-3 w-3 shrink-0" style={{ color: 'var(--theme-accent)' }} />
+                  )}
+                </div>
+                <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--theme-sub)' }}>
+                  {achievement.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex gap-1">
+                  {achievement.tiers.map(t => (
+                    <TierBadge key={t.tier} tier={t.tier} unlocked={unlockedTiers.includes(t.tier)} size="sm" />
+                  ))}
+                </div>
+                <span className="text-xs font-mono" style={{ color: 'var(--theme-sub)' }}>
+                  {currentValue.toLocaleString()} / {(nextTier?.requirement || maxRequirement).toLocaleString()}
+                </span>
+              </div>
+              <ProgressBar
+                current={currentValue}
+                max={maxRequirement}
+                tiers={achievement.tiers}
+                unlockedTiers={unlockedTiers}
+              />
+            </div>
+
+            {nextTier && (
+              <div className="mt-2 flex items-center justify-between text-[10px]">
+                <span style={{ color: 'var(--theme-sub)' }}>
+                  Next: {nextTier.tier.charAt(0).toUpperCase() + nextTier.tier.slice(1)}
+                </span>
+                <span style={{ color: 'var(--theme-accent)' }}>
+                  +{nextTier.xpReward} XP
+                </span>
+              </div>
             )}
           </div>
-          <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--theme-sub)' }}>
-            {achievement.description}
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="max-w-[280px]"
+          style={{ backgroundColor: 'var(--theme-bg)', color: 'var(--theme-text)', border: '1px solid var(--theme-subAlt)' }}
+        >
+          <p className="text-xs font-medium mb-1" style={{ color: 'var(--theme-accent)' }}>How to achieve:</p>
+          <p className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+            {achievement.howToAchieve || achievement.description}
           </p>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex gap-1">
-            {achievement.tiers.map(t => (
-              <TierBadge key={t.tier} tier={t.tier} unlocked={unlockedTiers.includes(t.tier)} size="sm" />
-            ))}
-          </div>
-          <span className="text-xs font-mono" style={{ color: 'var(--theme-sub)' }}>
-            {currentValue.toLocaleString()} / {(nextTier?.requirement || maxRequirement).toLocaleString()}
-          </span>
-        </div>
-        <ProgressBar
-          current={currentValue}
-          max={maxRequirement}
-          tiers={achievement.tiers}
-          unlockedTiers={unlockedTiers}
-        />
-      </div>
-
-      {nextTier && (
-        <div className="mt-2 flex items-center justify-between text-[10px]">
-          <span style={{ color: 'var(--theme-sub)' }}>
-            Next: {nextTier.tier.charAt(0).toUpperCase() + nextTier.tier.slice(1)}
-          </span>
-          <span style={{ color: 'var(--theme-accent)' }}>
-            +{nextTier.xpReward} XP
-          </span>
-        </div>
-      )}
-    </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
