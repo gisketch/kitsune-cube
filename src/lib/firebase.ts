@@ -12,6 +12,14 @@ const firebaseConfig = {
 }
 
 const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
+
+let firebaseAuth;
+try {
+  firebaseAuth = getAuth(app);
+} catch (error) {
+  console.log(error);
+}
+
+export const auth = firebaseAuth
 export const db = getFirestore(app)
 export const googleProvider = new GoogleAuthProvider()

@@ -27,16 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
-      setLoading(false)
-    })
-    return unsubscribe
+    if (auth) {
+      return onAuthStateChanged(auth, (user) => {
+        setUser(user)
+        setLoading(false)
+      })
+    }
   }, [])
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider)
+      if (auth) await signInWithPopup(auth, googleProvider)
     } catch (error) {
       console.error('Failed to sign in with Google:', error)
       throw error
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth)
+      if (auth) await signOut(auth)
     } catch (error) {
       console.error('Failed to sign out:', error)
       throw error
