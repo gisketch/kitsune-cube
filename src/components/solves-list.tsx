@@ -273,12 +273,37 @@ function SolveRow({
 
 export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: SolvesListProps) {
   const [currentPage, setCurrentPage] = useState(1)
-  const totalPages = Math.ceil(solves.length / ITEMS_PER_PAGE)
+  const [filters, setFilters] = useState<Set<'manual' | 'verified' | 'repeated'>>(new Set())
+
+  const toggleFilter = (filter: 'manual' | 'verified' | 'repeated') => {
+    setFilters(prev => {
+      const next = new Set(prev)
+      if (next.has(filter)) {
+        next.delete(filter)
+      } else {
+        next.add(filter)
+      }
+      return next
+    })
+    setCurrentPage(1)
+  }
+
+  const filteredSolves = useMemo(() => {
+    if (filters.size === 0) return solves
+    return solves.filter(s => {
+      if (filters.has('manual') && s.isManual) return true
+      if (filters.has('verified') && !s.isManual) return true
+      if (filters.has('repeated') && s.isRepeatedScramble) return true
+      return false
+    })
+  }, [solves, filters])
+
+  const totalPages = Math.ceil(filteredSolves.length / ITEMS_PER_PAGE)
   
   const paginatedSolves = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return solves.slice(start, start + ITEMS_PER_PAGE)
-  }, [solves, currentPage])
+    return filteredSolves.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredSolves, currentPage])
 
   if (solves.length === 0) {
     return (
@@ -294,9 +319,47 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
 
   const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE
 
+  const filterButtons: Array<{ key: 'manual' | 'verified' | 'repeated'; label: string }> = [
+    { key: 'verified', label: 'Verified' },
+    { key: 'manual', label: 'Manual' },
+    { key: 'repeated', label: 'Repeated' },
+  ]
+
   return (
     <div>
       {!hideStats && <StatsHeader solves={solves} />}
+      
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        <button
+          onClick={() => setFilters(new Set())}
+          className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+          style={{
+            backgroundColor: filters.size === 0 ? 'var(--theme-accent)' : 'var(--theme-subAlt)',
+            color: filters.size === 0 ? 'var(--theme-bg)' : 'var(--theme-sub)',
+          }}
+        >
+          All
+        </button>
+        {filterButtons.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => toggleFilter(key)}
+            className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: filters.has(key) ? 'var(--theme-accent)' : 'var(--theme-subAlt)',
+              color: filters.has(key) ? 'var(--theme-bg)' : 'var(--theme-sub)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        {filters.size > 0 && (
+          <span className="flex items-center text-xs px-2" style={{ color: 'var(--theme-sub)' }}>
+            ({filteredSolves.length})
+          </span>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full" style={{ borderCollapse: 'collapse' }}>
           <thead>
@@ -337,7 +400,7 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
                 key={solve.id}
                 solve={solve}
                 index={pageStartIndex + index}
-                total={solves.length}
+                total={filteredSolves.length}
                 onDelete={onDelete}
                 onViewDetails={onViewDetails}
               />

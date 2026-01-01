@@ -39,6 +39,9 @@ export interface UserStats {
   totalRotationDegrees: number
   avgSolveTime: number | null
   bestSolveTime: number | null
+  verifiedAvgSolveTime: number | null
+  verifiedBestSolveTime: number | null
+  verifiedTotalSolves: number
   avgCross: number | null
   avgF2L: number | null
   avgOLL: number | null

@@ -6,7 +6,7 @@ import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import type { Solve } from '@/types'
 
 export function SolvePage() {
-  const { solveId } = useParams<{ solveId: string }>()
+  const { userId, solveId } = useParams<{ userId?: string; solveId: string }>()
   const navigate = useNavigate()
   const { solves } = useSolves()
   const { setScramble } = useScrambleTracker()
@@ -27,11 +27,11 @@ export function SolvePage() {
     }
 
     setLoading(true)
-    fetchPublicSolve(solveId).then((solve) => {
+    fetchPublicSolve(solveId, userId).then((solve) => {
       setPublicSolve(solve)
       setLoading(false)
     })
-  }, [solveId, localSolve])
+  }, [solveId, userId, localSolve])
 
   const solve = localSolve || publicSolve
 

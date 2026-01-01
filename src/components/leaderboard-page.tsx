@@ -78,7 +78,7 @@ export function LeaderboardPage() {
   const isUserTab = tab !== 'singleSolve'
 
   const handleViewSolve = useCallback((solve: LeaderboardSolve) => {
-    navigate(`/solve/${solve.solveId}`)
+    navigate(`/solve/${solve.ownerId}/${solve.solveId}`)
   }, [navigate])
 
   const resetPagination = useCallback(() => {
@@ -151,9 +151,9 @@ export function LeaderboardPage() {
         level,
         totalXP,
         achievementsCompleted,
-        avgSolveTime: stats.avgSolveTime ?? null,
-        bestSolveTime: stats.bestSolveTime ?? null,
-        totalSolves: stats.totalSolves || 0,
+        avgSolveTime: stats.verifiedAvgSolveTime ?? stats.avgSolveTime ?? null,
+        bestSolveTime: stats.verifiedBestSolveTime ?? stats.bestSolveTime ?? null,
+        totalSolves: stats.verifiedTotalSolves || stats.totalSolves || 0,
       })
     }
 

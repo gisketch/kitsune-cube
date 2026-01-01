@@ -5,6 +5,7 @@ import {
   query,
   orderBy,
   where,
+  getDoc,
   getDocs,
   onSnapshot,
   setDoc,
@@ -246,13 +247,25 @@ export function useSolves() {
   }
 }
 
-export async function fetchPublicSolve(solveId: string): Promise<Solve | null> {
+export async function fetchPublicSolve(solveId: string, userId?: string): Promise<Solve | null> {
+  console.log('fetchPublicSolve called with solveId:', solveId, 'userId:', userId)
+  
   if (!db || isOfflineMode) {
     const localSolves = loadLocalSolves()
     return localSolves.find(s => s.id === solveId) || null
   }
 
   try {
+    if (userId) {
+      console.log('Fetching directly from path:', `users/${userId}/solves/${solveId}`)
+      const solveDoc = await getDoc(doc(db, 'users', userId, 'solves', solveId))
+      console.log('Document exists:', solveDoc.exists())
+      if (solveDoc.exists()) {
+        return { id: solveDoc.id, ...solveDoc.data() } as Solve
+      }
+      return null
+    }
+
     const solvesGroup = collectionGroup(db, 'solves')
     const q = query(solvesGroup, where('solveId', '==', solveId))
     const snapshot = await getDocs(q)

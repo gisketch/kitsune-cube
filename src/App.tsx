@@ -23,6 +23,7 @@ import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import { useSolves } from '@/hooks/useSolves'
 import { useSettings } from '@/hooks/useSettings'
 import { useSolveSession } from '@/contexts/SolveSessionContext'
+import { useAchievements } from '@/contexts/AchievementsContext'
 import { ConnectionModal } from '@/components/connection-modal'
 import { CalibrationModal } from '@/components/calibration-modal'
 import { CubeInfoModal } from '@/components/cube-info-modal'
@@ -113,8 +114,15 @@ function App() {
     resetSolveSession,
   } = useSolveSession()
 
-  const { solves, deleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
+  const { solves, deleteSolve: rawDeleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
+  const { recalculateStats } = useAchievements()
   const { settings, updateSetting } = useSettings()
+
+  const deleteSolve = useCallback(async (id: string) => {
+    await rawDeleteSolve(id)
+    const remainingSolves = solves.filter(s => s.id !== id)
+    await recalculateStats(remainingSolves)
+  }, [rawDeleteSolve, solves, recalculateStats])
   
   const [manualScramble, setManualScramble] = useState('')
 
@@ -593,6 +601,7 @@ function App() {
               />
             } />
             <Route path="/solve/:solveId" element={<SolvePage />} />
+            <Route path="/solve/:userId/:solveId" element={<SolvePage />} />
             <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/simulator" element={<Simulator />} />

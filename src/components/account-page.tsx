@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from 'react'
-import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2, Camera } from 'lucide-react'
+import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2, Camera, HelpCircle } from 'lucide-react'
 import { updateProfile } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { doc, updateDoc } from 'firebase/firestore'
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useExperience } from '@/contexts/ExperienceContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useToast } from '@/contexts/ToastContext'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { SolvesList } from '@/components/solves-list'
 import { SolveChart } from '@/components/solve-chart'
 import { SetGoalsModal } from '@/components/set-goals-modal'
@@ -726,14 +727,57 @@ function ProfileHeader() {
 }
 
 export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: AccountPageProps) {
-  const stats = useMemo(() => calculateStats(solves), [solves])
+  const verifiedSolves = useMemo(() => solves.filter(s => !s.isManual), [solves])
+  const hasVerifiedSolves = verifiedSolves.length > 0
+  const [verifiedOnly, setVerifiedOnly] = useState(hasVerifiedSolves)
+  
+  const displayedSolves = verifiedOnly ? verifiedSolves : solves
+  const stats = useMemo(() => calculateStats(displayedSolves), [displayedSolves])
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
 
   return (
     <div className="mx-auto w-full max-w-7xl overflow-y-auto px-4 py-4 md:px-8 pb-8">
-      <h2 className="mb-4 text-lg sm:text-xl font-semibold" style={{ color: 'var(--theme-text)' }}>
-        Account
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg sm:text-xl font-semibold" style={{ color: 'var(--theme-text)' }}>
+          Account
+        </h2>
+        <TooltipProvider delayDuration={0}>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="p-1 rounded-full" style={{ color: 'var(--theme-sub)' }}>
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                className="max-w-[220px] text-center"
+                style={{ backgroundColor: 'var(--theme-bg)', color: 'var(--theme-text)', border: '1px solid var(--theme-subAlt)' }}
+              >
+                <p className="text-xs">Display only smart cube solves. Excludes times entered via manual timer.</p>
+              </TooltipContent>
+            </Tooltip>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-xs sm:text-sm" style={{ color: 'var(--theme-sub)' }}>
+                Verified only
+              </span>
+              <button
+                onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className="relative w-10 h-5 rounded-full transition-colors"
+                style={{ backgroundColor: verifiedOnly ? 'var(--theme-accent)' : 'var(--theme-subAlt)' }}
+              >
+                <div
+                  className="absolute top-0.5 w-4 h-4 rounded-full transition-transform"
+                  style={{
+                    backgroundColor: 'var(--theme-bg)',
+                    transform: verifiedOnly ? 'translateX(22px)' : 'translateX(2px)',
+                  }}
+                />
+              </button>
+            </label>
+          </div>
+        </TooltipProvider>
+      </div>
 
       <div className="space-y-3 sm:space-y-4">
         <ProfileHeader />
@@ -749,11 +793,11 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
           <StatCard label="Mean" value={stats.mean ? formatTime(stats.mean) : null} />
         </div>
 
-        <CFOPStatsWidget solves={solves} onSetGoals={() => setIsGoalsModalOpen(true)} />
+        <CFOPStatsWidget solves={displayedSolves} onSetGoals={() => setIsGoalsModalOpen(true)} />
 
-        <ActivityCalendar solves={solves} />
+        <ActivityCalendar solves={displayedSolves} />
 
-        <SolveChart solves={solves} />
+        <SolveChart solves={displayedSolves} />
 
         <div
           className="rounded-xl p-3 sm:p-4"
@@ -763,10 +807,10 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
             className="mb-3 sm:mb-4 text-xs sm:text-sm font-medium uppercase tracking-wider"
             style={{ color: 'var(--theme-sub)' }}
           >
-            Solve History ({stats.count} total)
+            Solve History ({displayedSolves.length} {verifiedOnly ? 'verified' : 'total'})
           </h3>
           <SolvesList
-            solves={solves}
+            solves={displayedSolves}
             onDelete={onDeleteSolve}
             onViewDetails={onViewSolveDetails}
             hideStats

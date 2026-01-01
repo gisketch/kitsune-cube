@@ -27,6 +27,7 @@ interface AchievementsContextType {
   checkAndUpdateAchievements: (newStats: Partial<UserStats>) => Promise<AchievementUnlock[]>
   recordSolve: () => Promise<void>
   getPrestigeMultiplier: () => number
+  recalculateStats: (solves: Array<{ time: number; solution: string[]; isManual?: boolean; dnf?: boolean; plusTwo?: boolean }>) => Promise<void>
 }
 
 const AchievementsContext = createContext<AchievementsContextType | null>(null)
@@ -37,6 +38,9 @@ const DEFAULT_STATS: UserStats = {
   totalRotationDegrees: 0,
   avgSolveTime: null,
   bestSolveTime: null,
+  verifiedAvgSolveTime: null,
+  verifiedBestSolveTime: null,
+  verifiedTotalSolves: 0,
   avgCross: null,
   avgF2L: null,
   avgOLL: null,
@@ -236,6 +240,42 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
     return prestige.permanentMultiplier * streak.streakMultiplier
   }, [prestige.permanentMultiplier, streak.streakMultiplier])
 
+  const recalculateStats = useCallback(
+    async (solves: Array<{ time: number; solution: string[]; isManual?: boolean; dnf?: boolean; plusTwo?: boolean }>) => {
+      const validSolves = solves.filter(s => !s.dnf)
+      const verifiedSolves = validSolves.filter(s => !s.isManual)
+      
+      const getTimes = (list: typeof validSolves) => 
+        list.map(s => s.plusTwo ? s.time + 2000 : s.time)
+
+      const allTimes = getTimes(validSolves)
+      const verifiedTimes = getTimes(verifiedSolves)
+
+      const calcAvg = (times: number[]) => 
+        times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : null
+      const calcBest = (times: number[]) => 
+        times.length > 0 ? Math.min(...times) : null
+
+      const newStats: Partial<UserStats> = {
+        totalSolves: validSolves.length,
+        totalMoves: validSolves.reduce((sum, s) => sum + s.solution.length, 0),
+        avgSolveTime: calcAvg(allTimes),
+        bestSolveTime: calcBest(allTimes),
+        verifiedTotalSolves: verifiedSolves.length,
+        verifiedAvgSolveTime: calcAvg(verifiedTimes),
+        verifiedBestSolveTime: calcBest(verifiedTimes),
+      }
+
+      setStats(prev => ({ ...prev, ...newStats }))
+
+      if (!isGuest && user) {
+        const userDocRef = doc(db!, 'users', user.uid)
+        await setDoc(userDocRef, { stats: newStats }, { merge: true })
+      }
+    },
+    [user, isGuest]
+  )
+
   return (
     <AchievementsContext.Provider
       value={{
@@ -247,6 +287,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
         checkAndUpdateAchievements,
         recordSolve,
         getPrestigeMultiplier,
+        recalculateStats,
       }}
     >
       {children}

@@ -206,6 +206,20 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           bestSolveTime: newBestSolveTime,
         }
 
+        if (!isManual) {
+          const verifiedTotal = (userStats.verifiedTotalSolves ?? 0) + 1
+          const currentVerifiedAvg = userStats.verifiedAvgSolveTime ?? 0
+          statsUpdate.verifiedTotalSolves = verifiedTotal
+          statsUpdate.verifiedAvgSolveTime = currentVerifiedAvg > 0
+            ? Math.round((currentVerifiedAvg * (verifiedTotal - 1) + time) / verifiedTotal)
+            : time
+          const currentVerifiedBest = userStats.verifiedBestSolveTime ?? Infinity
+          statsUpdate.verifiedBestSolveTime = Math.min(
+            currentVerifiedBest === Infinity ? time : currentVerifiedBest,
+            time
+          )
+        }
+
         if (analysis) {
           if (analysis.oll.skipped) statsUpdate.ollSkips = userStats.ollSkips + 1
           if (analysis.pll.skipped) statsUpdate.pllSkips = userStats.pllSkips + 1
@@ -213,8 +227,9 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
             statsUpdate.crossUnder8Moves = userStats.crossUnder8Moves + 1
         }
 
-        if (solution.length <= 20) statsUpdate.godsNumberSolves = userStats.godsNumberSolves + 1
-        if (time < 20000 && solution.length > 80)
+        if (!isManual && solution.length > 0 && solution.length <= 20)
+          statsUpdate.godsNumberSolves = userStats.godsNumberSolves + 1
+        if (!isManual && time < 20000 && solution.length > 80)
           statsUpdate.sub20With80Moves = userStats.sub20With80Moves + 1
 
         checkAndUpdateAchievements(statsUpdate).then(unlocks => {
