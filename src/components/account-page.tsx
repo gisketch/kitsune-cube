@@ -2,15 +2,17 @@ import { useMemo, useState, useRef } from 'react'
 import { Edit2, Check, X, Flame, Target, Zap, Star, Gamepad2, Loader2, Camera } from 'lucide-react'
 import { updateProfile } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { doc, updateDoc } from 'firebase/firestore'
 import type { Solve } from '@/hooks/useSolves'
 import { useAuth } from '@/contexts/AuthContext'
 import { useExperience } from '@/contexts/ExperienceContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
+import { useToast } from '@/contexts/ToastContext'
 import { SolvesList } from '@/components/solves-list'
 import { SolveChart } from '@/components/solve-chart'
 import { SetGoalsModal } from '@/components/set-goals-modal'
 import { getLevelTitle } from '@/types/achievements'
-import { storage, isOfflineMode } from '@/lib/firebase'
+import { storage, db, isOfflineMode } from '@/lib/firebase'
 
 interface AccountPageProps {
   solves: Solve[]
@@ -487,9 +489,13 @@ function ActivityCalendar({ solves }: { solves: Solve[] }) {
   )
 }
 
+const MAX_NAME_LENGTH = 20
+const VALID_NAME_REGEX = /^[a-zA-Z0-9_\- ]+$/
+
 function ProfileHeader() {
   const { user } = useAuth()
   const { getXPData, loading: xpLoading } = useExperience()
+  const { showToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [displayName, setDisplayName] = useState(user?.displayName || 'Guest')
   const [isSaving, setIsSaving] = useState(false)
@@ -501,12 +507,28 @@ function ProfileHeader() {
   const handleSave = async () => {
     if (!user || !displayName.trim()) return
     
+    const trimmedName = displayName.trim()
+    
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      showToast(`Name must be ${MAX_NAME_LENGTH} characters or less`, 'error')
+      return
+    }
+    
+    if (!VALID_NAME_REGEX.test(trimmedName)) {
+      showToast('Name can only contain letters, numbers, spaces, hyphens, and underscores', 'error')
+      return
+    }
+    
     setIsSaving(true)
     try {
-      await updateProfile(user, { displayName: displayName.trim() })
+      await updateProfile(user, { displayName: trimmedName })
+      if (db && !isOfflineMode) {
+        await updateDoc(doc(db, 'users', user.uid), { displayName: trimmedName })
+      }
       setIsEditing(false)
     } catch (error) {
       console.error('Failed to update display name:', error)
+      showToast('Failed to update name', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -538,6 +560,9 @@ function ProfileHeader() {
       await uploadBytes(storageRef, file)
       const photoURL = await getDownloadURL(storageRef)
       await updateProfile(user, { photoURL })
+      if (db && !isOfflineMode) {
+        await updateDoc(doc(db, 'users', user.uid), { photoURL })
+      }
       window.location.reload()
     } catch (error) {
       console.error('Failed to upload photo:', error)
