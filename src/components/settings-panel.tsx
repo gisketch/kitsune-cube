@@ -202,6 +202,50 @@ export function SettingsPanel({ onMigrateToCloud, isCloudSync }: SettingsPanelPr
             className="mb-4 text-sm font-medium uppercase tracking-wider"
             style={{ color: 'var(--theme-sub)' }}
           >
+            Timer
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 flex items-center justify-between">
+                <span className="text-sm" style={{ color: 'var(--theme-text)' }}>
+                  Hold Threshold
+                </span>
+                <span className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+                  {settings.holdThreshold}ms
+                </span>
+              </label>
+              <input
+                type="range"
+                min={100}
+                max={700}
+                step={50}
+                value={settings.holdThreshold}
+                onChange={(e) => updateSetting('holdThreshold', parseInt(e.target.value))}
+                className="h-2 w-full cursor-pointer appearance-none rounded-lg"
+                style={{ backgroundColor: 'var(--theme-subAlt)' }}
+              />
+              <div
+                className="mt-1 flex justify-between text-xs"
+                style={{ color: 'var(--theme-sub)' }}
+              >
+                <span>Fast (100ms)</span>
+                <span>Slow (700ms)</span>
+              </div>
+            </div>
+
+            <div className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+              How long you need to hold spacebar/screen before the timer is ready to start.
+              Lower values mean faster starts but may cause accidental triggers.
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--theme-bgSecondary)' }}>
+          <h3
+            className="mb-4 text-sm font-medium uppercase tracking-wider"
+            style={{ color: 'var(--theme-sub)' }}
+          >
             Smart Cube
           </h3>
 

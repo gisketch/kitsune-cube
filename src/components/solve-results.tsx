@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   SkipBack,
   SkipForward,
+  Clock,
+  Hash,
 } from 'lucide-react'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import * as THREE from 'three'
@@ -16,11 +18,31 @@ import { DEFAULT_CONFIG } from '@/config/scene-config'
 import { createSolvedCube, applyMove, cubeFacesToFacelets, COLOR_HEX } from '@/lib/cube-faces'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatTime, formatDuration } from '@/lib/format'
+import { useGoals } from '@/contexts/GoalsContext'
 import type { CFOPAnalysis, CFOPPhase } from '@/lib/cfop-analyzer'
+import type { PhaseGoal } from '@/types/goals'
 import type { KPattern } from 'cubing/kpuzzle'
 import type { MutableRefObject } from 'react'
 import type { Quaternion } from 'three'
 import type { Solve } from '@/types'
+
+type DisplayMode = 'moves' | 'time'
+
+function TriangleUp({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg className={className} style={style} viewBox="0 0 10 10" fill="currentColor">
+      <polygon points="5,1 9,9 1,9" />
+    </svg>
+  )
+}
+
+function TriangleDown({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg className={className} style={style} viewBox="0 0 10 10" fill="currentColor">
+      <polygon points="1,1 9,1 5,9" />
+    </svg>
+  )
+}
 
 interface SolveResultsProps {
   time: number
@@ -72,12 +94,16 @@ function PhaseStatCard({
   duration,
   tps,
   recognitionRatio = 0.25,
+  displayMode = 'time',
+  goal,
 }: {
   label: string
   moves: number
   duration: number
   tps: number
   recognitionRatio?: number
+  displayMode?: DisplayMode
+  goal?: PhaseGoal
 }) {
   const [isOpen, setIsOpen] = useState(false)
   
@@ -91,15 +117,30 @@ function PhaseStatCard({
     return `${(ms / 1000).toFixed(2)}s`
   }
 
+  const displayValue = displayMode === 'moves' ? moves.toString() : formatDuration(duration)
+
+  const movesMet = goal && moves > 0 ? moves <= goal.moves : null
+  const timeMet = goal && moves > 0 ? duration <= goal.time : null
+  const goalMet = displayMode === 'moves' ? movesMet : timeMet
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center md:items-start"
     >
-      <span className="text-xs tracking-wide md:text-sm" style={{ color: 'var(--theme-sub)' }}>
-        {label}
-      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs tracking-wide md:text-sm" style={{ color: 'var(--theme-sub)' }}>
+          {label}
+        </span>
+        {goalMet !== null && (
+          goalMet ? (
+            <TriangleDown className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeGreen)' }} />
+          ) : (
+            <TriangleUp className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeRed)' }} />
+          )
+        )}
+      </div>
       {moves > 0 ? (
         <Tooltip open={isOpen} onOpenChange={setIsOpen}>
           <TooltipTrigger asChild>
@@ -108,7 +149,7 @@ function PhaseStatCard({
               className="cursor-pointer text-lg font-bold transition-colors hover:text-[var(--theme-accent)] md:text-3xl"
               style={{ color: 'var(--theme-text)' }}
             >
-              {formatDuration(duration)}
+              {displayValue}
             </button>
           </TooltipTrigger>
           <TooltipContent
@@ -144,6 +185,28 @@ function PhaseStatCard({
                   {formatMs(executionTime)} ({executionPercent}%)
                 </span>
               </div>
+              {goal && (
+                <>
+                  <div
+                    className="my-0.5 h-px w-full"
+                    style={{ backgroundColor: 'var(--theme-subAlt)' }}
+                  />
+                  <div className="flex items-center justify-between gap-4">
+                    <span style={{ color: 'var(--theme-sub)' }}>Goal</span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-0.5" style={{ color: movesMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                        {movesMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                        {goal.moves}
+                      </span>
+                      <span style={{ color: 'var(--theme-sub)' }}>/</span>
+                      <span className="flex items-center gap-0.5" style={{ color: timeMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                        {timeMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                        {(goal.time / 1000).toFixed(1)}s
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -218,8 +281,11 @@ interface PhaseBarProps {
   moves: number
   recognitionRatio: number
   maxMoves: number
+  maxDuration: number
   duration: number
   phaseColor: string
+  goal?: PhaseGoal
+  displayMode: DisplayMode
 }
 
 function VerticalBar({
@@ -227,15 +293,26 @@ function VerticalBar({
   moves,
   recognitionRatio,
   maxMoves,
+  maxDuration,
   duration,
   phaseColor,
+  goal,
+  displayMode,
 }: PhaseBarProps) {
-  const barHeight = maxMoves > 0 ? (moves / maxMoves) * 100 : 0
+  const barValue = displayMode === 'moves' ? moves : duration
+  const maxValue = displayMode === 'moves' ? maxMoves : maxDuration
+  const barHeight = maxValue > 0 ? (barValue / maxValue) * 100 : 0
   const recognitionHeight = recognitionRatio * 100
   const executionRatio = 1 - recognitionRatio
 
   const recognitionTime = duration * recognitionRatio
   const executionTime = duration * executionRatio
+
+  const goalValue = goal ? (displayMode === 'moves' ? goal.moves : goal.time) : null
+  const goalHeight = goalValue && maxValue > 0 ? (goalValue / maxValue) * 100 : null
+
+  const movesMet = goal ? moves <= goal.moves : null
+  const timeMet = goal ? duration <= goal.time : null
 
   const formatMs = (ms: number) => {
     if (ms < 1000) return `${Math.round(ms)}ms`
@@ -248,6 +325,17 @@ function VerticalBar({
         className="relative w-full cursor-pointer overflow-hidden rounded-t transition-opacity hover:opacity-100"
         style={{ height: '120px', opacity: 0.9 }}
       >
+        {goalHeight !== null && goalHeight <= 100 && (
+          <div
+            className="absolute left-0 right-0 z-10"
+            style={{
+              bottom: `${goalHeight}%`,
+              height: '2px',
+              backgroundColor: 'var(--theme-text)',
+              boxShadow: '0 0 6px var(--theme-text)',
+            }}
+          />
+        )}
         <div
           className="absolute bottom-0 left-0 right-0 flex flex-col overflow-hidden rounded-t"
           style={{ height: `${Math.max(barHeight, 5)}%` }}
@@ -306,6 +394,28 @@ function VerticalBar({
             <span>Execution: {Math.round(executionRatio * 100)}%</span>
             <span style={{ color: 'var(--theme-text)' }}>{formatMs(executionTime)}</span>
           </div>
+          {goal && (
+            <>
+              <div
+                className="my-0.5 h-px w-full"
+                style={{ backgroundColor: 'var(--theme-subAlt)' }}
+              />
+              <div className="flex items-center justify-between gap-4">
+                <span style={{ color: 'var(--theme-sub)' }}>Goal</span>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-0.5" style={{ color: movesMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                    {movesMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                    {goal.moves}
+                  </span>
+                  <span style={{ color: 'var(--theme-sub)' }}>/</span>
+                  <span className="flex items-center gap-0.5" style={{ color: timeMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                    {timeMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                    {(goal.time / 1000).toFixed(1)}s
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -317,14 +427,25 @@ function HorizontalBar({
   moves,
   recognitionRatio,
   maxMoves,
+  maxDuration,
   duration,
   phaseColor,
+  goal,
+  displayMode,
 }: PhaseBarProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const barWidth = maxMoves > 0 ? (moves / maxMoves) * 100 : 0
+  const barValue = displayMode === 'moves' ? moves : duration
+  const maxValue = displayMode === 'moves' ? maxMoves : maxDuration
+  const barWidth = maxValue > 0 ? (barValue / maxValue) * 100 : 0
   const executionRatio = 1 - recognitionRatio
   const recognitionTime = duration * recognitionRatio
   const executionTime = duration * executionRatio
+
+  const goalValue = goal ? (displayMode === 'moves' ? goal.moves : goal.time) : null
+  const goalPosition = goalValue && maxValue > 0 ? (goalValue / maxValue) * 100 : null
+
+  const movesMet = goal ? moves <= goal.moves : null
+  const timeMet = goal ? duration <= goal.time : null
 
   const formatMs = (ms: number) => {
     if (ms < 1000) return `${Math.round(ms)}ms`
@@ -340,13 +461,24 @@ function HorizontalBar({
           {label}
         </span>
         <span className="text-[10px]" style={{ color: 'var(--theme-sub)' }}>
-          {moves}
+          {displayMode === 'moves' ? moves : formatMs(duration)}
         </span>
       </div>
       <div
-        className="h-2 w-full overflow-hidden rounded-full"
+        className="relative h-2 w-full overflow-hidden rounded-full"
         style={{ backgroundColor: 'var(--theme-subAlt)' }}
       >
+        {goalPosition !== null && goalPosition <= 100 && (
+          <div
+            className="absolute top-0 bottom-0 z-10"
+            style={{
+              left: `${goalPosition}%`,
+              width: '2px',
+              backgroundColor: 'var(--theme-text)',
+              boxShadow: '0 0 6px var(--theme-text)',
+            }}
+          />
+        )}
         <div
           className="flex h-full overflow-hidden rounded-full"
           style={{ width: `${Math.max(barWidth, 3)}%` }}
@@ -411,6 +543,28 @@ function HorizontalBar({
               {formatMs(executionTime)} ({Math.round(executionRatio * 100)}%)
             </span>
           </div>
+          {goal && (
+            <>
+              <div
+                className="my-0.5 h-px w-full"
+                style={{ backgroundColor: 'var(--theme-subAlt)' }}
+              />
+              <div className="flex items-center justify-between gap-4">
+                <span style={{ color: 'var(--theme-sub)' }}>Goal</span>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-0.5" style={{ color: movesMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                    {movesMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                    {goal.moves}
+                  </span>
+                  <span style={{ color: 'var(--theme-sub)' }}>/</span>
+                  <span className="flex items-center gap-0.5" style={{ color: timeMet ? 'var(--theme-cubeGreen)' : 'var(--theme-cubeRed)' }}>
+                    {timeMet ? <TriangleDown className="h-2.5 w-2.5" /> : <TriangleUp className="h-2.5 w-2.5" />}
+                    {(goal.time / 1000).toFixed(1)}s
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -426,6 +580,8 @@ function MobileCFOPBreakdown({
   f2lDuration,
   ollDuration,
   pllDuration,
+  displayMode,
+  goals,
 }: {
   crossMoves: number
   f2lMoves: number
@@ -435,14 +591,17 @@ function MobileCFOPBreakdown({
   f2lDuration: number
   ollDuration: number
   pllDuration: number
+  displayMode: DisplayMode
+  goals?: { cross?: PhaseGoal; f2l?: PhaseGoal; oll?: PhaseGoal; pll?: PhaseGoal }
 }) {
   const maxMoves = Math.max(crossMoves, f2lMoves, ollMoves, pllMoves, 1)
+  const maxDuration = Math.max(crossDuration, f2lDuration, ollDuration, pllDuration, 1)
 
   const phases = [
-    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration },
-    { label: 'F2L', moves: f2lMoves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2lDuration },
-    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration },
-    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration },
+    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross },
+    { label: 'F2L', moves: f2lMoves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2lDuration, goal: goals?.f2l },
+    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll },
+    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll },
   ]
 
   return (
@@ -454,8 +613,11 @@ function MobileCFOPBreakdown({
           moves={phase.moves}
           recognitionRatio={phase.recognitionRatio}
           maxMoves={maxMoves}
+          maxDuration={maxDuration}
           duration={phase.duration}
           phaseColor={`var(${phase.colorVar})`}
+          goal={phase.goal}
+          displayMode={displayMode}
         />
       ))}
     </div>
@@ -488,6 +650,9 @@ export function SolveResults({
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(500)
   const [currentElapsedTime, setCurrentElapsedTime] = useState(0)
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('moves')
+
+  const { goals, totalTime: totalTimeGoal } = useGoals()
 
   const hasGyroData = Boolean(solve?.gyroData && solve.gyroData.length > 0)
   const hasMoveTimings = Boolean(solve?.moveTimings && solve.moveTimings.length > 0)
@@ -543,14 +708,30 @@ export function SolveResults({
     1,
   )
 
+  const maxDuration = Math.max(
+    crossDuration,
+    f2l1Duration,
+    f2l2Duration,
+    f2l3Duration,
+    f2l4Duration,
+    ollDuration,
+    pllDuration,
+    1,
+  )
+
+  const f2lGoalPerSlot = goals ? {
+    moves: Math.ceil(goals.f2l.moves / 4),
+    time: goals.f2l.time / 4,
+  } : undefined
+
   const phases = [
-    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration },
-    { label: 'F2L 1', moves: f2l1Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2l1Duration },
-    { label: 'F2L 2', moves: f2l2Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L2', duration: f2l2Duration },
-    { label: 'F2L 3', moves: f2l3Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L3', duration: f2l3Duration },
-    { label: 'F2L 4', moves: f2l4Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L4', duration: f2l4Duration },
-    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration },
-    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration },
+    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross },
+    { label: 'F2L 1', moves: f2l1Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2l1Duration, goal: f2lGoalPerSlot },
+    { label: 'F2L 2', moves: f2l2Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L2', duration: f2l2Duration, goal: f2lGoalPerSlot },
+    { label: 'F2L 3', moves: f2l3Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L3', duration: f2l3Duration, goal: f2lGoalPerSlot },
+    { label: 'F2L 4', moves: f2l4Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L4', duration: f2l4Duration, goal: f2lGoalPerSlot },
+    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll },
+    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll },
   ]
 
   const { initialScrambledFacelets, replayPhases, allMoves, totalMoves, timeOffset } =
@@ -983,9 +1164,36 @@ export function SolveResults({
               transition={{ delay: 0.1 }}
               className="text-center md:text-left"
             >
-              <span className="text-xs md:text-base" style={{ color: 'var(--theme-sub)' }}>
-                time
-              </span>
+              <div className="flex items-center justify-center gap-1.5 md:justify-between md:min-w-[120px]">
+                <span className="text-xs md:text-base" style={{ color: 'var(--theme-sub)' }}>
+                  time
+                </span>
+                {totalTimeGoal !== null && (
+                  <div className="flex items-center gap-1">
+                    {displayTime <= totalTimeGoal ? (
+                      <>
+                        <TriangleDown 
+                          className="h-2.5 w-2.5 md:h-3 md:w-3" 
+                          style={{ color: 'var(--theme-success, #22c55e)' }} 
+                        />
+                        <span className="text-[10px] md:text-xs" style={{ color: 'var(--theme-success, #22c55e)' }}>
+                          -{((totalTimeGoal - displayTime) / 1000).toFixed(1)}s
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <TriangleUp 
+                          className="h-2.5 w-2.5 md:h-3 md:w-3" 
+                          style={{ color: 'var(--theme-error, #ef4444)' }} 
+                        />
+                        <span className="text-[10px] md:text-xs" style={{ color: 'var(--theme-error, #ef4444)' }}>
+                          +{((displayTime - totalTimeGoal) / 1000).toFixed(1)}s
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               <div
                 className="text-4xl font-bold tabular-nums md:text-6xl"
                 style={{ color: 'var(--theme-accent)' }}
@@ -1042,25 +1250,47 @@ export function SolveResults({
                 className="hidden flex-1 flex-col gap-2 md:flex"
                 style={{ maxWidth: '400px' }}
               >
-                <div className="mb-1 flex items-center justify-end">
+                <div className="mb-1 flex items-center justify-end gap-3">
                   <div
-                    className="flex items-center gap-3 text-xs"
+                    className="flex items-center gap-2 text-[10px]"
                     style={{ color: 'var(--theme-sub)' }}
                   >
                     <div className="flex items-center gap-1">
                       <div
-                        className="h-2 w-4 rounded-sm opacity-40"
+                        className="h-1.5 w-3 rounded-sm opacity-40"
                         style={{ backgroundColor: 'var(--theme-text)' }}
                       />
                       <span>rec</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div
-                        className="h-2 w-4 rounded-sm opacity-90"
+                        className="h-1.5 w-3 rounded-sm opacity-90"
                         style={{ backgroundColor: 'var(--theme-text)' }}
                       />
                       <span>exec</span>
                     </div>
+                  </div>
+                  <div className="flex rounded overflow-hidden" style={{ backgroundColor: 'var(--theme-subAlt)' }}>
+                    <button
+                      onClick={() => setDisplayMode('moves')}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] transition-colors"
+                      style={{
+                        backgroundColor: displayMode === 'moves' ? 'var(--theme-accent)' : 'transparent',
+                        color: displayMode === 'moves' ? 'var(--theme-bg)' : 'var(--theme-sub)',
+                      }}
+                    >
+                      <Hash className="h-2.5 w-2.5" />
+                    </button>
+                    <button
+                      onClick={() => setDisplayMode('time')}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] transition-colors"
+                      style={{
+                        backgroundColor: displayMode === 'time' ? 'var(--theme-accent)' : 'transparent',
+                        color: displayMode === 'time' ? 'var(--theme-bg)' : 'var(--theme-sub)',
+                      }}
+                    >
+                      <Clock className="h-2.5 w-2.5" />
+                    </button>
                   </div>
                 </div>
                 <div className="mt-4 flex w-full gap-1">
@@ -1073,8 +1303,11 @@ export function SolveResults({
                         moves={phase.moves}
                         recognitionRatio={phase.recognitionRatio}
                         maxMoves={maxMoves}
+                        maxDuration={maxDuration}
                         duration={phase.duration}
                         phaseColor={`var(${phase.colorVar})`}
+                        goal={phase.goal}
+                        displayMode={displayMode}
                       />
                     ))}
                 </div>
@@ -1243,6 +1476,8 @@ export function SolveResults({
                     duration={crossDuration}
                     tps={crossTps}
                     recognitionRatio={0.15}
+                    displayMode={displayMode}
+                    goal={goals.cross}
                   />
                   <PhaseStatCard
                     label="f2l"
@@ -1250,6 +1485,8 @@ export function SolveResults({
                     duration={f2lDuration}
                     tps={f2lTps}
                     recognitionRatio={0.25}
+                    displayMode={displayMode}
+                    goal={goals.f2l}
                   />
                   <PhaseStatCard
                     label="oll"
@@ -1257,6 +1494,8 @@ export function SolveResults({
                     duration={ollDuration}
                     tps={ollTps}
                     recognitionRatio={0.35}
+                    displayMode={displayMode}
+                    goal={goals.oll}
                   />
                   <PhaseStatCard
                     label="pll"
@@ -1264,6 +1503,8 @@ export function SolveResults({
                     duration={pllDuration}
                     tps={pllTps}
                     recognitionRatio={0.3}
+                    displayMode={displayMode}
+                    goal={goals.pll}
                   />
                 </div>
 
@@ -1276,6 +1517,8 @@ export function SolveResults({
                     duration={crossDuration}
                     tps={crossTps}
                     recognitionRatio={0.15}
+                    displayMode={displayMode}
+                    goal={goals.cross}
                   />
                   <PhaseStatCard
                     label="f2l"
@@ -1283,6 +1526,8 @@ export function SolveResults({
                     duration={f2lDuration}
                     tps={f2lTps}
                     recognitionRatio={0.25}
+                    displayMode={displayMode}
+                    goal={goals.f2l}
                   />
                   <PhaseStatCard
                     label="oll"
@@ -1290,6 +1535,8 @@ export function SolveResults({
                     duration={ollDuration}
                     tps={ollTps}
                     recognitionRatio={0.35}
+                    displayMode={displayMode}
+                    goal={goals.oll}
                   />
                   <PhaseStatCard
                     label="pll"
@@ -1297,6 +1544,8 @@ export function SolveResults({
                     duration={pllDuration}
                     tps={pllTps}
                     recognitionRatio={0.3}
+                    displayMode={displayMode}
+                    goal={goals.pll}
                   />
                 </div>
               </motion.div>
@@ -1314,6 +1563,13 @@ export function SolveResults({
             f2lDuration={f2lDuration}
             ollDuration={ollDuration}
             pllDuration={pllDuration}
+            displayMode={displayMode}
+            goals={{
+              cross: goals.cross,
+              f2l: goals.f2l,
+              oll: goals.oll,
+              pll: goals.pll,
+            }}
           />
           )}
 

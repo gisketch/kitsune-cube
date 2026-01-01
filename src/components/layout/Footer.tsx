@@ -1,6 +1,5 @@
-import { Mail, MessageCircle, Code2, Heart } from 'lucide-react'
-
-const VERSION = '0.1.0'
+import { Mail, MessageCircle, Heart, Github } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 export function Footer() {
   return (
@@ -15,11 +14,29 @@ export function Footer() {
         <FooterLink icon={Mail} label="contact" href="mailto:dev@gisketch.com" />
         <FooterLink icon={MessageCircle} label="discord" href="https://discord.gg/XPQr4wpQVg" />
         <FooterLink icon={Heart} label="support" href="https://ko-fi.com/gisketch" accent />
+        <FooterLink icon={Github} label="source" href="https://github.com/gisketch/kitsune-cube" />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Code2 className="h-4 w-4" />
-        <span>v{VERSION}</span>
+      <div className="flex items-center gap-1">
+        <span>© 2026 - made by</span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href="https://gisketch.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:opacity-80"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                @gisketch
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>gisketch.com</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </footer>
   )

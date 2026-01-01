@@ -9,9 +9,11 @@ import {
   Boxes,
   ChevronDown,
   Check,
+  Eye,
 } from 'lucide-react'
 import { formatTime } from '@/lib/format'
 import type { Solve } from '@/types'
+import type { InspectionTime } from '@/hooks/useSettings'
 
 type AverageType = 'ao5' | 'ao12' | 'ao50' | 'ao100'
 
@@ -21,8 +23,11 @@ interface StatusBarProps {
   isConnected: boolean
   isConnecting?: boolean
   method?: string
+  inspectionTime?: InspectionTime
+  customInspectionTime?: number
   onConnect?: () => void
   onMethodChange?: (method: string) => void
+  onInspectionChange?: (time: InspectionTime) => void
   onOpenCubeInfo?: () => void
 }
 
@@ -160,12 +165,16 @@ export function StatusBar({
   isConnected,
   isConnecting,
   method = 'CFOP',
+  inspectionTime = 'none',
+  customInspectionTime = 15,
   onConnect,
   onMethodChange,
+  onInspectionChange,
   onOpenCubeInfo,
 }: StatusBarProps) {
   const [methodOpen, setMethodOpen] = useState(false)
   const [avgOpen, setAvgOpen] = useState(false)
+  const [inspectionOpen, setInspectionOpen] = useState(false)
   const [selectedAvg, setSelectedAvg] = useState<AverageType>('ao5')
 
   const averages = useMemo(() => calculateAverages(solves), [solves])
@@ -178,6 +187,12 @@ export function StatusBar({
     ao100: 'ao100',
   }
 
+  const getInspectionLabel = () => {
+    if (inspectionTime === 'none') return 'off'
+    if (inspectionTime === 'custom') return `${customInspectionTime}s`
+    return `${inspectionTime}s`
+  }
+
   const handleMethodSelect = (m: string) => {
     onMethodChange?.(m)
     setMethodOpen(false)
@@ -186,6 +201,11 @@ export function StatusBar({
   const handleAvgSelect = (avg: AverageType) => {
     setSelectedAvg(avg)
     setAvgOpen(false)
+  }
+
+  const handleInspectionSelect = (time: InspectionTime) => {
+    onInspectionChange?.(time)
+    setInspectionOpen(false)
   }
 
   return (
@@ -201,6 +221,31 @@ export function StatusBar({
         <Dropdown isOpen={methodOpen} onClose={() => setMethodOpen(false)}>
           <DropdownItem onClick={() => handleMethodSelect('CFOP')} selected={method === 'CFOP'}>
             CFOP
+          </DropdownItem>
+        </Dropdown>
+      </div>
+
+      <div className="relative">
+        <StatusButton
+          icon={Eye}
+          label="inspect"
+          value={getInspectionLabel()}
+          onClick={() => setInspectionOpen(!inspectionOpen)}
+          hasDropdown
+          compact
+        />
+        <Dropdown isOpen={inspectionOpen} onClose={() => setInspectionOpen(false)}>
+          <DropdownItem onClick={() => handleInspectionSelect('none')} selected={inspectionTime === 'none'}>
+            Off
+          </DropdownItem>
+          <DropdownItem onClick={() => handleInspectionSelect('15')} selected={inspectionTime === '15'}>
+            15s
+          </DropdownItem>
+          <DropdownItem onClick={() => handleInspectionSelect('30')} selected={inspectionTime === '30'}>
+            30s
+          </DropdownItem>
+          <DropdownItem onClick={() => handleInspectionSelect('60')} selected={inspectionTime === '60'}>
+            60s
           </DropdownItem>
         </Dropdown>
       </div>

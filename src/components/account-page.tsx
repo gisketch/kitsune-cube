@@ -8,6 +8,7 @@ import { useExperience } from '@/contexts/ExperienceContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { SolvesList } from '@/components/solves-list'
 import { SolveChart } from '@/components/solve-chart'
+import { SetGoalsModal } from '@/components/set-goals-modal'
 import { getLevelTitle } from '@/types/achievements'
 import { storage, isOfflineMode } from '@/lib/firebase'
 
@@ -123,6 +124,7 @@ interface CFOPStats {
   avgOLL: number | null
   avgPLL: number | null
   avgMoves: number | null
+  avgTPS: number | null
 }
 
 function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
@@ -131,7 +133,7 @@ function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
     .slice(0, count)
 
   if (validSolves.length === 0) {
-    return { avgCross: null, avgF2L: null, avgOLL: null, avgPLL: null, avgMoves: null }
+    return { avgCross: null, avgF2L: null, avgOLL: null, avgPLL: null, avgMoves: null, avgTPS: null }
   }
 
   const crossMoves: number[] = []
@@ -139,6 +141,7 @@ function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
   const ollMoves: number[] = []
   const pllMoves: number[] = []
   const totalMoves: number[] = []
+  const tpsValues: number[] = []
 
   for (const solve of validSolves) {
     const analysis = solve.cfopAnalysis!
@@ -151,6 +154,10 @@ function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
     if (!analysis.pll.skipped) pllMoves.push(analysis.pll.moves.length)
     
     totalMoves.push(solve.solution.length)
+    
+    if (solve.time > 0 && solve.solution.length > 0) {
+      tpsValues.push(solve.solution.length / (solve.time / 1000))
+    }
   }
 
   const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null
@@ -161,14 +168,16 @@ function calculateCFOPStats(solves: Solve[], count: number): CFOPStats {
     avgOLL: avg(ollMoves),
     avgPLL: avg(pllMoves),
     avgMoves: avg(totalMoves),
+    avgTPS: avg(tpsValues),
   }
 }
 
-function CFOPStatsWidget({ solves }: { solves: Solve[] }) {
+function CFOPStatsWidget({ solves, onSetGoals }: { solves: Solve[]; onSetGoals: () => void }) {
   const [sampleSize, setSampleSize] = useState(12)
   const stats = useMemo(() => calculateCFOPStats(solves, sampleSize), [solves, sampleSize])
 
   const formatMoves = (moves: number | null) => moves ? moves.toFixed(1) : '-'
+  const formatTPS = (tps: number | null) => tps ? tps.toFixed(2) : '-'
 
   return (
     <div
@@ -182,27 +191,40 @@ function CFOPStatsWidget({ solves }: { solves: Solve[] }) {
         >
           CFOP Analysis
         </h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--theme-sub)' }}>avg of</span>
-          <select
-            value={sampleSize}
-            onChange={(e) => setSampleSize(Number(e.target.value))}
-            className="rounded px-2 py-1 text-xs"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onSetGoals}
+            className="flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors hover:opacity-80"
             style={{
-              backgroundColor: 'var(--theme-subAlt)',
-              color: 'var(--theme-text)',
-              border: 'none',
+              backgroundColor: 'var(--theme-accent)',
+              color: 'var(--theme-bg)',
             }}
           >
-            <option value={5}>5</option>
-            <option value={12}>12</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+            <Target className="h-3 w-3" />
+            Set Goals
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--theme-sub)' }}>avg of</span>
+            <select
+              value={sampleSize}
+              onChange={(e) => setSampleSize(Number(e.target.value))}
+              className="rounded px-2 py-1 text-xs"
+              style={{
+                backgroundColor: 'var(--theme-subAlt)',
+                color: 'var(--theme-text)',
+                border: 'none',
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={12}>12</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
         <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
           <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>Cross</span>
           <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgCross)}</span>
@@ -223,10 +245,15 @@ function CFOPStatsWidget({ solves }: { solves: Solve[] }) {
           <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgPLL)}</span>
           <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
         </div>
-        <div className="col-span-2 sm:col-span-1 flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-accent)', opacity: 0.9 }}>
-          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-bg)' }}>Total</span>
-          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-bg)' }}>{formatMoves(stats.avgMoves)}</span>
-          <span className="text-[9px]" style={{ color: 'var(--theme-bg)' }}>moves</span>
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-bg)' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-sub)' }}>Total</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-text)' }}>{formatMoves(stats.avgMoves)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-sub)' }}>moves</span>
+        </div>
+        <div className="flex flex-col items-center rounded-lg px-2 py-2" style={{ backgroundColor: 'var(--theme-accent)', opacity: 0.9 }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-bg)' }}>Avg TPS</span>
+          <span className="font-mono text-lg font-bold" style={{ color: 'var(--theme-bg)' }}>{formatTPS(stats.avgTPS)}</span>
+          <span className="text-[9px]" style={{ color: 'var(--theme-bg)' }}>turns/s</span>
         </div>
       </div>
 
@@ -675,6 +702,7 @@ function ProfileHeader() {
 
 export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: AccountPageProps) {
   const stats = useMemo(() => calculateStats(solves), [solves])
+  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
 
   return (
     <div className="mx-auto w-full max-w-7xl overflow-y-auto px-4 py-4 md:px-8 pb-8">
@@ -696,7 +724,7 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
           <StatCard label="Mean" value={stats.mean ? formatTime(stats.mean) : null} />
         </div>
 
-        <CFOPStatsWidget solves={solves} />
+        <CFOPStatsWidget solves={solves} onSetGoals={() => setIsGoalsModalOpen(true)} />
 
         <ActivityCalendar solves={solves} />
 
@@ -720,6 +748,8 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
           />
         </div>
       </div>
+
+      <SetGoalsModal isOpen={isGoalsModalOpen} onClose={() => setIsGoalsModalOpen(false)} />
     </div>
   )
 }

@@ -85,7 +85,7 @@ function App() {
   } = useSolveSession()
 
   const { solves, deleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
-  const { settings } = useSettings()
+  const { settings, updateSetting } = useSettings()
   
   const [manualScramble, setManualScramble] = useState('')
 
@@ -243,20 +243,23 @@ function App() {
       const newFacelets = await updateCubeState(move)
       updateCubeFaces(move)
 
-      const calibration = checkCalibrationSequence(move)
-      if (calibration === 'gyro') {
-        calibrationActionsRef.current.resetGyro()
-        syncWithFacelets(newFacelets)
-        return
-      }
-      if (calibration === 'cube') {
-        calibrationActionsRef.current.syncCube()
-        syncWithFacelets(newFacelets)
-        return
-      }
-      if (calibration === 'scramble' && timer.status === 'stopped') {
-        calibrationActionsRef.current.nextScramble()
-        return
+      const isTimerActive = timer.status === 'running' || timer.status === 'inspection'
+      if (!isTimerActive) {
+        const calibration = checkCalibrationSequence(move)
+        if (calibration === 'gyro') {
+          calibrationActionsRef.current.resetGyro()
+          syncWithFacelets(newFacelets)
+          return
+        }
+        if (calibration === 'cube') {
+          calibrationActionsRef.current.syncCube()
+          syncWithFacelets(newFacelets)
+          return
+        }
+        if (calibration === 'scramble' && timer.status === 'stopped') {
+          calibrationActionsRef.current.nextScramble()
+          return
+        }
       }
 
       trackMove(move)
@@ -485,6 +488,9 @@ function App() {
                 isConnecting={isConnecting}
                 onConnect={connect}
                 onOpenCubeInfo={handleOpenCubeInfo}
+                inspectionTime={settings.inspectionTime}
+                customInspectionTime={settings.customInspectionTime}
+                onInspectionChange={(time) => updateSetting('inspectionTime', time)}
               />
               {((timer.status === 'stopped' || manualTimer.status === 'stopped') && lastSolveTime > 0) ? (
                 <SolveResults
@@ -513,12 +519,14 @@ function App() {
                     isManual={manualTimerEnabled}
                     manualScramble={manualScramble}
                     isRepeatedScramble={isRepeatedScramble}
+                    inspectionRemaining={timer.inspectionRemaining}
                   />
 
                   {manualTimerEnabled ? (
                     <ManualTimerDisplay
                       status={manualTimer.status}
                       time={manualTimer.time}
+                      inspectionRemaining={manualTimer.inspectionRemaining}
                       onConnect={connect}
                     />
                   ) : (

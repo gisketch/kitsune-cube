@@ -5,6 +5,7 @@ interface TimerDisplayProps {
   time: number
   status: TimerStatus
   visible: boolean
+  inspectionRemaining?: number
 }
 
 function formatTime(ms: number): string {
@@ -19,9 +20,13 @@ function formatTime(ms: number): string {
   return `${seconds}.${centiseconds.toString().padStart(2, '0')}`
 }
 
-export function TimerDisplay({ time, status, visible }: TimerDisplayProps) {
-  const statusText =
-    status === 'inspection'
+export function TimerDisplay({ time, status, visible, inspectionRemaining = 0 }: TimerDisplayProps) {
+  const inspectionSeconds = Math.ceil(inspectionRemaining / 1000)
+  const hasInspectionCountdown = status === 'inspection' && inspectionRemaining > 0
+
+  const statusText = hasInspectionCountdown
+    ? 'Make a move to start'
+    : status === 'inspection'
       ? 'Inspection - make a move to start'
       : status === 'running'
         ? 'Solving...'
@@ -35,7 +40,11 @@ export function TimerDisplay({ time, status, visible }: TimerDisplayProps) {
       : status === 'stopped'
         ? 'text-blue-400'
         : status === 'inspection'
-          ? 'text-yellow-400'
+          ? inspectionSeconds <= 3
+            ? 'text-red-400'
+            : inspectionSeconds <= 8
+              ? 'text-yellow-400'
+              : 'text-green-400'
           : ''
 
   return (
@@ -52,7 +61,7 @@ export function TimerDisplay({ time, status, visible }: TimerDisplayProps) {
             className={`font-mono text-6xl font-light tracking-tight transition-colors ${colorClass}`}
             style={status === 'idle' ? { color: 'var(--theme-text)' } : undefined}
           >
-            {formatTime(time)}
+            {hasInspectionCountdown ? inspectionSeconds : formatTime(time)}
           </div>
           <div className="mt-2 text-sm" style={{ color: 'var(--theme-sub)' }}>
             {statusText}

@@ -7,15 +7,21 @@ import type { ManualTimerStatus } from '@/hooks/useManualTimer'
 interface ManualTimerDisplayProps {
   status: ManualTimerStatus
   time: number
+  inspectionRemaining?: number
   onConnect?: () => void
 }
 
-export function ManualTimerDisplay({ status, time, onConnect }: ManualTimerDisplayProps) {
+export function ManualTimerDisplay({ status, time, inspectionRemaining = 0, onConnect }: ManualTimerDisplayProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   const getTimerColor = () => {
     if (status === 'holding') return 'var(--theme-text)'
     if (status === 'ready') return 'var(--theme-accent)'
+    if (status === 'inspection') {
+      if (inspectionRemaining <= 3000) return 'var(--theme-cubeRed)'
+      if (inspectionRemaining <= 8000) return 'var(--theme-cubeOrange)'
+      return 'var(--theme-cubeYellow)'
+    }
     if (status === 'running') return 'var(--theme-text)'
     if (status === 'stopped') return 'var(--theme-accent)'
     return 'var(--theme-sub)'
@@ -25,6 +31,13 @@ export function ManualTimerDisplay({ status, time, onConnect }: ManualTimerDispl
     if (status === 'holding') return 1.05
     if (status === 'ready') return 1.08
     return 1
+  }
+
+  const getDisplayTime = () => {
+    if (status === 'inspection') {
+      return Math.ceil(inspectionRemaining / 1000).toString()
+    }
+    return formatTime(time)
   }
 
   return (
@@ -41,7 +54,7 @@ export function ManualTimerDisplay({ status, time, onConnect }: ManualTimerDispl
             scale: { type: 'spring', stiffness: 400, damping: 25 }
           }}
         >
-          {formatTime(time)}
+          {getDisplayTime()}
         </motion.div>
         
         <div className="flex flex-col items-center gap-2">
@@ -52,6 +65,7 @@ export function ManualTimerDisplay({ status, time, onConnect }: ManualTimerDispl
             {status === 'idle' && <><span className="md:hidden">hold to start</span><span className="hidden md:inline">hold space to start</span></>}
             {status === 'holding' && 'keep holding...'}
             {status === 'ready' && 'release to start!'}
+            {status === 'inspection' && <><span className="md:hidden">hold to start</span><span className="hidden md:inline">hold space to start solving</span></>}
             {status === 'running' && <><span className="md:hidden">tap to stop</span><span className="hidden md:inline">press any key to stop</span></>}
             {status === 'stopped' && <><span className="md:hidden">tap for next</span><span className="hidden md:inline">press space for next</span></>}
           </div>

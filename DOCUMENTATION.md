@@ -1,465 +1,495 @@
-# Cube App Documentation
+# Smart Cube CFOP Analyzer - Documentation
 
-A modern Rubik's Cube timer and solver application built with React, Three.js, and TypeScript. This app connects to GAN Smart Cubes via Bluetooth, tracks solves, analyzes CFOP method phases, and provides comprehensive statistics and solve replays.
+A modern Rubik's Cube timer application that connects to GAN Smart Cubes via Bluetooth, tracks solves in real-time, and automatically analyzes your CFOP method execution.
 
 ---
 
 ## Table of Contents
 
-1. [Tech Stack](#tech-stack)
-2. [Project Structure](#project-structure)
-3. [Architecture Overview](#architecture-overview)
-4. [Core Features](#core-features)
-5. [Theming System](#theming-system)
-6. [Component Library](#component-library)
-7. [Custom Hooks](#custom-hooks)
-8. [Cube Logic & Algorithms](#cube-logic--algorithms)
-9. [3D Rendering](#3d-rendering)
-10. [Smart Cube Integration](#smart-cube-integration)
-11. [State Management](#state-management)
-12. [Data Flow](#data-flow)
+1. [Application Flow](#application-flow)
+2. [Entry Point & Providers](#entry-point--providers)
+3. [Core State Management](#core-state-management)
+4. [Hooks Reference](#hooks-reference)
+5. [Library Modules](#library-modules)
+6. [Components](#components)
+7. [Contexts](#contexts)
+8. [Types](#types)
+9. [Data Flow Diagrams](#data-flow-diagrams)
 
 ---
 
-## Tech Stack
+## Application Flow
 
-| Category          | Technology                                    |
-| ----------------- | --------------------------------------------- |
-| **Framework**     | React 19                                      |
-| **Language**      | TypeScript 5.9                                |
-| **Build Tool**    | Vite 7                                        |
-| **3D Graphics**   | Three.js, React Three Fiber, React Three Drei |
-| **Styling**       | Tailwind CSS 3.4                              |
-| **Animation**     | Framer Motion                                 |
-| **UI Components** | shadcn/ui (Radix primitives)                  |
-| **Cube Library**  | `cubing` (kpuzzle, scramble generation)       |
-| **Smart Cube**    | `gan-web-bluetooth`                           |
-| **Icons**         | Lucide React                                  |
-| **Routing**       | React Router DOM 7                            |
-
----
-
-## Project Structure
+### High-Level Overview
 
 ```
-src/
-├── App.tsx                    # Main application component & state orchestration
-├── main.tsx                   # App entry point with ThemeProvider
-├── index.css                  # Global styles & CSS variables
-│
-├── types/
-│   └── index.ts               # Centralized TypeScript type definitions
-│
-├── components/
-│   ├── layout/
-│   │   ├── Header.tsx         # Navigation header with user dropdown
-│   │   ├── Footer.tsx         # Footer with version & links
-│   │   └── StatusBar.tsx      # Stats display (ao5, pb, battery)
-│   │
-│   ├── cube/
-│   │   ├── index.tsx          # CubeViewer canvas wrapper
-│   │   └── RubiksCube.tsx     # 3D Rubik's Cube with animations
-│   │
-│   ├── ui/
-│   │   ├── index.ts           # Barrel export for all UI components
-│   │   ├── button.tsx         # shadcn Button component
-│   │   ├── tooltip.tsx        # shadcn Tooltip component
-│   │   ├── card.tsx           # Reusable Card component
-│   │   ├── kbd.tsx            # Keyboard key display component
-│   │   ├── icon-button.tsx    # Reusable animated icon button
-│   │   └── stat-display.tsx   # Stat display components
-│   │
-│   ├── timer-display.tsx      # Timer UI with status
-│   ├── scramble-notation.tsx  # Interactive scramble progress display
-│   ├── scramble-display.tsx   # Alternative scramble display
-│   ├── solve-results.tsx      # Post-solve results & CFOP breakdown
-│   ├── solves-list.tsx        # Solve history table
-│   ├── solve-detail-page.tsx  # Detailed solve view with tabs
-│   ├── solve-replay-content.tsx # Solve replay with gyro playback
-│   ├── solve-stats-content.tsx  # Detailed statistics visualization
-│   ├── settings-panel.tsx     # Theme & animation settings
-│   ├── simulator.tsx          # CFOP algorithm simulator
-│   ├── command-palette.tsx    # Ctrl+K command search
-│   ├── connection-modal.tsx   # Bluetooth connection dialog
-│   ├── calibration-modal.tsx  # Cube sync & gyro calibration
-│   ├── cube-net.tsx           # 2D cube net visualization
-│   ├── cfop-analysis.tsx      # CFOP phase breakdown display
-│   ├── keyboard-hints.tsx     # Keyboard shortcut hints
-│   ├── gradient-orbs.tsx      # Background decorative elements
-│   ├── static-cube.tsx        # Simple static 3D cube
-│   ├── Sidebar.tsx            # Navigation sidebar (alternate layout)
-│   ├── debug-config-panel.tsx # Scene configuration debug panel
-│   └── theme-provider.tsx     # React context for theme
-│
-├── hooks/
-│   ├── useGanCube.ts          # GAN Bluetooth cube connection
-│   ├── useCubeState.ts        # Cube pattern state (cubing library)
-│   ├── useCubeFaces.ts        # Face-based cube state
-│   ├── useScrambleTracker.ts  # Scramble progress tracking
-│   ├── useTimer.ts            # Timer logic (inspection/running/stopped)
-│   ├── useSolves.ts           # Solve history with localStorage
-│   ├── useSettings.ts         # App settings persistence
-│   ├── useGyroRecorder.ts     # Gyroscope data recording
-│   ├── useSceneConfig.tsx     # Scene configuration state
-│   ├── useKeyboardShortcuts.ts # Declarative keyboard shortcuts hook
-│   ├── useCalibrationSequence.ts # Calibration gesture detection
-│   └── useSolveSession.ts     # Main session orchestration hook
-│
-├── lib/
-│   ├── format.ts              # Centralized formatting utilities
-│   ├── constants.ts           # Shared constants & magic values
-│   ├── cube-state.ts          # Cube state using cubing library
-│   ├── cube-faces.ts          # Face-based cube representation
-│   ├── move-utils.ts          # Move parsing & manipulation
-│   ├── cfop-analyzer.ts       # CFOP phase detection algorithm
-│   ├── solve-stats.ts         # Solve statistics calculation
-│   ├── themes.ts              # Theme definitions & application
-│   └── utils.ts               # Tailwind class merge utility
-│
-└── config/
-    └── scene-config.ts        # 3D scene configuration
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              main.tsx                                        │
+│   Wraps App with: ErrorBoundary → ThemeProvider → AuthProvider →            │
+│   ExperienceProvider → AchievementsProvider → SolveSessionProvider          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                               App.tsx                                        │
+│                                                                              │
+│   1. User connects GAN Smart Cube via Bluetooth (useGanCube)                │
+│   2. App generates scramble (generateScramble)                               │
+│   3. User executes scramble on cube → tracked visually (useScrambleTracker) │
+│   4. Timer enters inspection mode when scramble complete                     │
+│   5. First solve move starts timer (useTimer)                                │
+│   6. Cube solved → timer stops → CFOP analysis runs (analyzeCFOP)           │
+│   7. Solve saved to storage (useSolves) with analysis                       │
+│   8. New scramble generated, cycle repeats                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Timer State Machine
+
+```
+                    ┌──────────────────────────────────────────┐
+                    │                                          │
+                    ▼                                          │
+┌──────────┐   scramble    ┌─────────────┐   first    ┌───────────┐   solved   ┌─────────┐
+│   idle   │ ─────────────►│ inspection  │ ──────────►│  running  │ ──────────►│ stopped │
+└──────────┘   complete    └─────────────┘   move     └───────────┘            └─────────┘
+     ▲                                                                              │
+     │                          new scramble                                        │
+     └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Architecture Overview
+## Entry Point & Providers
 
-### Application Flow
+### main.tsx
+
+The application entry point that sets up the React tree with all context providers:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         App.tsx                                  │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │                    State Management                       │   │
-│  │  • Timer state (useTimer)                                │   │
-│  │  • Cube state (useCubeState, useCubeFaces)              │   │
-│  │  • Scramble tracking (useScrambleTracker)               │   │
-│  │  • Solve history (useSolves)                            │   │
-│  │  • GAN connection (useGanCube)                          │   │
-│  │  • Settings (useSettings)                               │   │
-│  │  • Gyro recording (useGyroRecorder)                     │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                              │                                   │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │                      UI Tabs                              │   │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │   │
-│  │  │  Timer   │ │  Solves  │ │ Simulator│ │ Settings │   │   │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+StrictMode
+└── ErrorBoundary        → Catches and displays React errors
+    └── ThemeProvider    → Manages dark/light themes and custom themes
+        └── AuthProvider → Firebase authentication state
+            └── ExperienceProvider → XP/leveling system
+                └── AchievementsProvider → Achievement tracking
+                    └── SolveSessionProvider → Core solve session state
+                        └── App
 ```
-
-### Key Design Patterns
-
-1. **Hooks-Based Architecture**: All logic is encapsulated in custom hooks
-2. **Ref-Based Updates**: Performance-critical data (quaternion, move callbacks) uses refs to avoid re-renders
-3. **Dual Cube State**: Uses both `cubing` library patterns and custom face-based tracking
-4. **Theme Variables**: CSS custom properties for consistent theming
-5. **Component Composition**: Small, focused components composed together
 
 ---
 
-## Core Features
+## Core State Management
 
-### 1. Smart Cube Connection
+### App.tsx - Main Orchestrator
 
-- Connects to GAN Smart Cubes via Web Bluetooth API
-- Real-time move detection and gyroscope orientation
-- Battery level monitoring
-- MAC address fallback for connection issues
+The central hub that coordinates all hooks and manages the solve lifecycle:
 
-### 2. Timer System
+| State | Purpose |
+|-------|---------|
+| `activeTab` | Current navigation tab (timer/account/simulator/settings) |
+| `frozenPattern` | KPattern snapshot for 3D cube rendering |
+| `selectedSolve` | Currently selected solve for detail view |
+| `solveViewMode` | View mode for solve details (list/results/stats/replay) |
 
-- **Idle**: Waiting for scramble
-- **Inspection**: Post-scramble inspection phase
-- **Running**: Active timer during solve
-- **Stopped**: Solve complete
+**Key Callbacks:**
+- `handleMove(move)` - Processes moves from smart cube, updates all state systems
+- `handleNewScramble()` - Generates new scramble, resets solve session
+- `handleSyncCube()` - Resets internal cube state to solved
+- `checkCalibrationSequence(move)` - Detects gesture sequences (4x U/F/D moves)
 
-### 3. Scramble Tracking
-
-- Generates random 3x3 scrambles using `cubing` library
-- Tracks user's scramble execution progress
-- Detects divergence and shows recovery moves
-- Visual feedback for completed/current/pending moves
-
-### 4. CFOP Analysis
-
-- Automatically detects cross color
-- Identifies Cross, F2L slots (4), OLL, and PLL phases
-- Tracks move counts and timing per phase
-- Compares actual splits to ideal splits
-
-### 5. Solve Statistics
-
-- Total time, TPS (turns per second), move count
-- Per-phase breakdown with recognition/execution times
-- TPS over time graph
-- Historical averages (Ao5, Ao12)
-
-### 6. Solve Replay
-
-- Records gyroscope data during solves
-- Playback with variable speed control
-- 2D and 3D view modes
-- Move-by-move stepping
+**Calibration Gestures:**
+- 4x U moves → Reset gyroscope
+- 4x F moves → Sync cube state
+- 4x D moves → Generate new scramble
 
 ---
 
-## Theming System
+## Hooks Reference
 
-### Theme Structure
+### useGanCube.ts
+**Location:** `src/hooks/useGanCube.ts`
 
-Themes are defined in `src/lib/themes.ts`:
+Manages Bluetooth connection to GAN Smart Cubes.
 
 ```typescript
-interface Theme {
-  name: string
-  colors: {
-    bg: string // Main background
-    bgSecondary: string // Secondary panels
-    main: string // Primary accent
-    sub: string // Subdued text
-    subAlt: string // Borders, dividers
-    text: string // Primary text
-    error: string // Error states
-    accent: string // Interactive elements
-    accentHover: string // Hover states
-  }
-}
+const {
+  connect,           // Initiate Bluetooth connection
+  disconnect,        // Close connection
+  isConnected,       // Connection state
+  isConnecting,      // Connecting in progress
+  quaternionRef,     // Real-time gyroscope orientation (THREE.Quaternion)
+  resetGyro,         // Reset gyroscope to current orientation
+  batteryLevel,      // Current battery percentage
+  error,             // Connection error message
+} = useGanCube(onMove)
 ```
 
-### Available Themes
+**Event Handling:**
+- `GYRO` - Updates quaternion for 3D cube orientation
+- `MOVE` - Validates and forwards moves to callback
+- `BATTERY` - Updates battery level
+- `DISCONNECT` - Resets connection state
 
-| Theme         | Style                     |
-| ------------- | ------------------------- |
-| `dark`        | Default dark theme        |
-| `light`       | Light mode                |
-| `serikaDark`  | Monkeytype-inspired dark  |
-| `serikaLight` | Monkeytype-inspired light |
-| `nord`        | Nord color palette        |
-| `dracula`     | Dracula theme             |
-| `monokai`     | Monokai editor theme      |
-| `ocean`       | Blue ocean tones          |
-| `matrix`      | Green terminal style      |
-| `midnight`    | Purple dark theme         |
-| `everforest`  | Soft green nature theme   |
-| `oneDark`     | Atom One Dark             |
+---
 
-### CSS Variables
+### useTimer.ts
+**Location:** `src/hooks/useTimer.ts`
 
-Themes are applied via CSS custom properties:
+Simple timer with millisecond precision using `requestAnimationFrame`.
 
-```css
-:root {
-  --theme-bg: #0a0a0a;
-  --theme-bgSecondary: #171717;
-  --theme-main: #e2b714;
-  --theme-sub: #646669;
-  --theme-subAlt: #2c2e31;
-  --theme-text: #d1d0c5;
-  --theme-error: #ca4754;
-  --theme-accent: #e2b714;
-  --theme-accentHover: #c9a312;
-  --radius: 0.75rem;
-}
-```
-
-### Usage Pattern
-
-Components use inline styles with CSS variables:
-
-```tsx
-<div
-  className="rounded-lg p-4"
-  style={{
-    backgroundColor: 'var(--theme-bgSecondary)',
-    color: 'var(--theme-text)',
-    border: '1px solid var(--theme-subAlt)'
-  }}
->
+```typescript
+const {
+  status,            // 'idle' | 'inspection' | 'running' | 'stopped'
+  time,              // Current time in milliseconds
+  startInspection,   // Enter inspection phase
+  startTimer,        // Start counting (only works from inspection)
+  stopTimer,         // Stop and return final time
+  reset,             // Reset to idle
+} = useTimer()
 ```
 
 ---
 
-## Component Library
+### useScrambleTracker.ts
+**Location:** `src/hooks/useScrambleTracker.ts`
 
-### shadcn/ui Setup
+Tracks user's progress through a scramble sequence with recovery detection.
 
-Configuration in `components.json`:
-
-```json
-{
-  "style": "default",
-  "rsc": false,
-  "tsx": true,
-  "tailwind": {
-    "config": "tailwind.config.js",
-    "css": "src/index.css",
-    "baseColor": "neutral",
-    "cssVariables": true
+```typescript
+const {
+  state: {
+    status,           // 'idle' | 'scrambling' | 'diverged' | 'completed' | 'solving' | 'solved'
+    originalScramble, // The scramble string
+    moves,            // Array of move states with status
+    currentIndex,     // Current position in scramble
+    recoveryMoves,    // Moves needed to recover from divergence
+    isSolved,         // Whether cube is solved
+    solutionMoves,    // Moves made during solve phase
   },
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils"
-  }
-}
+  setScramble,        // Set new scramble
+  performMove,        // Process a move during scrambling
+  syncWithFacelets,   // Sync tracker with actual cube state
+  setSolved,          // Update solved state
+  startSolving,       // Transition to solving phase
+} = useScrambleTracker()
 ```
 
-### Button Component
+**Move States:**
+- `pending` - Not yet executed
+- `current` - Currently expected move
+- `completed` - Successfully executed
+- `recovery` - Recovery move to get back on track
 
-Uses Class Variance Authority (CVA) for variants:
+---
 
-```tsx
-const buttonVariants = cva('inline-flex items-center justify-center gap-2...', {
-  variants: {
-    variant: {
-      default: 'bg-primary text-primary-foreground hover:opacity-90',
-      secondary: '...',
-      outline: '...',
-      ghost: '...',
-      link: '...',
-      destructive: '...',
-    },
-    size: {
-      default: 'h-10 px-4 py-2',
-      sm: 'h-9 rounded-md px-3',
-      lg: 'h-11 rounded-md px-8',
-      icon: 'h-10 w-10',
-    },
-  },
-})
+### useCubeFaces.ts
+**Location:** `src/hooks/useCubeFaces.ts`
+
+Maintains face-level cube state for CFOP analysis.
+
+```typescript
+const {
+  faces,          // Current CubeFaces state
+  performMove,    // Apply a single move
+  applyScramble,  // Apply full scramble algorithm
+  reset,          // Reset to solved state
+  isSolved,       // Check if cube is solved
+  getHistory,     // Get { moves: string[], states: CubeFaces[] }
+  clearHistory,   // Clear move/state history
+} = useCubeFaces()
 ```
 
-### Tooltip Component
+**Why Two Cube States?**
+- `useCubeState` - Uses `cubing` library's KPuzzle for 3D rendering
+- `useCubeFaces` - Simple face array for CFOP detection algorithms
 
-Built on Radix UI primitives:
+---
 
-```tsx
-import * as TooltipPrimitive from '@radix-ui/react-tooltip'
-;<TooltipProvider>
-  <Tooltip>
-    <TooltipTrigger>Hover me</TooltipTrigger>
-    <TooltipContent>Content here</TooltipContent>
-  </Tooltip>
-</TooltipProvider>
+### useCubeState.ts
+**Location:** `src/hooks/useCubeState.ts`
+
+Cube state using the `cubing` library for accurate 3D representation.
+
+```typescript
+const {
+  cubeState,         // { kpuzzle, pattern, transformation, facelets }
+  isLoading,         // True while initializing
+  performMove,       // Apply move, returns new facelets string
+  reset,             // Reset to solved
+  scramble,          // Generate and apply random scramble
+  currentScramble,   // Current scramble algorithm
+} = useCubeState()
 ```
 
 ---
 
-## Custom Hooks
+### useGyroRecorder.ts
+**Location:** `src/hooks/useGyroRecorder.ts`
 
-### useGanCube
-
-Manages GAN Smart Cube Bluetooth connection:
-
-```typescript
-interface GanCubeState {
-  isConnected: boolean
-  isConnecting: boolean
-  error: string | null
-  deviceName: string | null
-  isMacAddressRequired: boolean
-  debugLog: string[]
-  batteryLevel: number | null
-}
-
-// Returns
-{
-  ...state,
-  connect,          // Initiate connection
-  disconnect,       // Disconnect cube
-  resetGyro,        // Reset gyroscope orientation
-  clearError,       // Clear error state
-  submitMacAddress, // Submit MAC for manual connection
-  quaternionRef,    // Current orientation (ref)
-}
-```
-
-### useCubeState
-
-Manages cube pattern using `cubing` library:
+Records gyroscope data and move timings for solve replay.
 
 ```typescript
-{
-  cubeState,        // Current KPattern
-  isLoading,        // Initial load state
-  currentScramble,  // Current scramble string
-  isSolved,         // Whether cube is solved
-  performMove,      // Apply single move
-  performAlgorithm, // Apply algorithm string
-  reset,            // Reset to solved
-  scramble,         // Generate and apply scramble
-}
+const {
+  startRecording,    // Begin recording session
+  stopRecording,     // End recording, returns { gyroData, moveTimings }
+  recordGyroFrame,   // Record quaternion at current time
+  recordMove,        // Record move at current time
+  isRecording,       // Check if recording active
+} = useGyroRecorder()
 ```
 
-### useCubeFaces
+**Recording Data:**
+- Gyro frames sampled every 50ms
+- Maximum 2000 frames (~100 seconds)
+- Move timings with millisecond precision
 
-Face-based cube representation:
+---
+
+### useSolves.ts
+**Location:** `src/hooks/useSolves.ts`
+
+Manages solve history with Firebase cloud sync or localStorage fallback.
+
+```typescript
+const {
+  solves,               // Array of all solves
+  loading,              // Loading state
+  stats,                // { best, worst, average, ao5, ao12 }
+  addSolve,             // Add new solve
+  deleteSolve,          // Remove solve by ID
+  updateSolve,          // Update solve properties
+  clearSolves,          // Delete all solves
+  migrateLocalToCloud,  // Sync localStorage to Firebase
+  isCloudSync,          // Whether using cloud storage
+} = useSolves()
+```
+
+---
+
+### useSettings.ts
+**Location:** `src/hooks/useSettings.ts`
+
+Manages application settings with localStorage persistence.
+
+```typescript
+const {
+  settings: {
+    animationSpeed,   // 3D cube animation speed
+    gyroEnabled,      // Enable gyroscope tracking
+    theme,            // Application theme
+    cubeTheme,        // Cube color scheme
+    showNet,          // Show 2D cube net
+  },
+  updateSettings,     // Partial settings update
+} = useSettings()
+```
+
+---
+
+## Library Modules
+
+### cfop-analyzer.ts
+**Location:** `src/lib/cfop-analyzer.ts`
+
+The core CFOP phase detection algorithm.
+
+```typescript
+interface CFOPAnalysis {
+  crossColor: Color      // 'W' | 'Y' | 'G' | 'B' | 'R' | 'O'
+  cross: CFOPPhase       // { name, moves[], skipped }
+  f2l: CFOPPhase[]       // 4 F2L slot phases
+  oll: CFOPPhase         // OLL phase
+  pll: CFOPPhase         // PLL phase
+}
+
+function analyzeCFOP(moves: string[], stateHistory: CubeFaces[]): CFOPAnalysis | null
+```
+
+**Detection Algorithm:**
+1. **Cross Detection** - Iterates through state history until 4 edge pieces form a cross with correct center alignment
+2. **F2L Slots** - Tracks when each corner-edge pair is correctly positioned
+3. **OLL Detection** - All pieces on top face match top color
+4. **PLL Detection** - Entire cube solved
+
+---
+
+### cube-faces.ts
+**Location:** `src/lib/cube-faces.ts`
+
+Face-based cube representation using 9-element color arrays per face.
 
 ```typescript
 type Color = 'W' | 'Y' | 'G' | 'B' | 'R' | 'O'
 
 interface CubeFaces {
-  U: Color[]  // 9 colors for Up face
-  D: Color[]  // Down
-  F: Color[]  // Front
-  B: Color[]  // Back
-  L: Color[]  // Left
-  R: Color[]  // Right
+  U: Color[]  // Up (White)
+  D: Color[]  // Down (Yellow)
+  F: Color[]  // Front (Green)
+  B: Color[]  // Back (Blue)
+  L: Color[]  // Left (Orange)
+  R: Color[]  // Right (Red)
 }
 
-{
-  faces,            // Current state
-  performMove,      // Apply move
-  applyScramble,    // Apply scramble algorithm
-  reset,            // Reset to solved
-  isSolved,         // Check if solved
-  getHistory,       // Get move/state history
-  clearHistory,     // Clear history
+// Face indexing (0-8):
+// 0 1 2
+// 3 4 5  (4 is center)
+// 6 7 8
+
+function applyMove(cube: CubeFaces, move: string): CubeFaces
+function isSolved(cube: CubeFaces): boolean
+function createSolvedCube(): CubeFaces
+```
+
+---
+
+### cube-state.ts
+**Location:** `src/lib/cube-state.ts`
+
+Cube state using the `cubing` library for accurate puzzle representation.
+
+```typescript
+interface CubeState {
+  kpuzzle: KPuzzle
+  pattern: KPattern
+  transformation: KTransformation
+  facelets: string  // 54-character string (UUUUUUUUURRRRRRRRRFFF...)
+}
+
+async function generateScramble(): Promise<string>
+async function createSolvedState(): Promise<CubeState>
+function applyMoveToFacelets(facelets: string, move: string): string
+```
+
+---
+
+### move-utils.ts
+**Location:** `src/lib/move-utils.ts`
+
+Move parsing and manipulation utilities.
+
+```typescript
+interface ParsedMove {
+  face: string        // R, L, U, D, F, B
+  modifier: string    // '', "'", '2'
+  notation: string    // Full notation: "R'", "U2", etc.
+}
+
+function parseScramble(scramble: string): ParsedMove[]
+function getInverseMove(move: ParsedMove): ParsedMove
+function isSameFace(a: ParsedMove, b: ParsedMove): boolean
+```
+
+---
+
+## Components
+
+### Layout Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `Header` | `src/components/layout/Header.tsx` | Navigation tabs, branding |
+| `Footer` | `src/components/layout/Footer.tsx` | App footer |
+| `StatusBar` | `src/components/layout/StatusBar.tsx` | Connection status, battery |
+
+### Core Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `CubeViewer` | `src/components/cube/index.tsx` | 3D Rubik's Cube with Three.js |
+| `RubiksCube` | `src/components/cube/RubiksCube.tsx` | Three.js cube mesh and animations |
+| `ScrambleNotation` | `src/components/scramble-notation.tsx` | Interactive scramble progress display |
+| `TimerDisplay` | `src/components/timer-display.tsx` | Timer UI with status |
+| `ManualTimerDisplay` | `src/components/manual-timer-display.tsx` | Space-bar controlled timer |
+| `SolveResults` | `src/components/solve-results.tsx` | Post-solve results with CFOP breakdown |
+| `CFOPAnalysisDisplay` | `src/components/cfop-analysis.tsx` | CFOP phase breakdown visualization |
+| `RecentSolves` | `src/components/recent-solves.tsx` | Quick view of last few solves |
+
+### Page Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `AccountPage` | `src/components/account-page.tsx` | User stats, solve history, CFOP averages |
+| `AchievementsPage` | `src/components/achievements-page.tsx` | Achievement badges and progress |
+| `LeaderboardPage` | `src/components/leaderboard-page.tsx` | Community leaderboards |
+| `Simulator` | `src/components/simulator.tsx` | CFOP algorithm simulator |
+| `SettingsPanel` | `src/components/settings-panel.tsx` | Theme and animation settings |
+
+### Modal Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `ConnectionModal` | `src/components/connection-modal.tsx` | Bluetooth connection dialog |
+| `CalibrationModal` | `src/components/calibration-modal.tsx` | Cube sync and gyro calibration |
+| `CubeInfoModal` | `src/components/cube-info-modal.tsx` | Connected cube information |
+| `CommandPalette` | `src/components/command-palette.tsx` | Ctrl+K command search |
+
+---
+
+## Contexts
+
+### SolveSessionContext.tsx
+**Location:** `src/contexts/SolveSessionContext.tsx`
+
+Central context for the current solve session state.
+
+```typescript
+interface SolveSessionContextValue {
+  timer: ReturnType<typeof useTimer>
+  manualTimer: ReturnType<typeof useManualTimer>
+  gyroRecorder: ReturnType<typeof useGyroRecorder>
+  
+  scramble: string
+  isRepeatedScramble: boolean
+  solveSaved: boolean
+  lastSolveTime: number
+  lastMoveCount: number
+  lastScramble: string
+  lastAnalysis: CFOPAnalysis | null
+  
+  saveSolve: (params) => void
+  resetSolveSession: () => void
+  triggerNewScramble: () => void
 }
 ```
 
-### useScrambleTracker
+**saveSolve Flow:**
+1. Marks solve as saved
+2. Runs CFOP analysis on move history
+3. Adds to persistent storage
+4. Awards XP (if not repeated scramble)
+5. Updates achievement statistics
 
-Tracks scramble execution progress:
+---
+
+### AuthContext.tsx
+**Location:** `src/contexts/AuthContext.tsx`
+
+Firebase authentication state management.
+
+### ExperienceContext.tsx
+**Location:** `src/contexts/ExperienceContext.tsx`
+
+XP and leveling system for gamification.
+
+### AchievementsContext.tsx
+**Location:** `src/contexts/AchievementsContext.tsx`
+
+Achievement tracking and unlocking.
+
+---
+
+## Types
+
+### src/types/index.ts
+
+Central type definitions:
 
 ```typescript
-type ScrambleStatus = 'idle' | 'scrambling' | 'diverged' | 'completed' | 'solving' | 'solved'
-
-{
-  status,           // Current scramble status
-  originalScramble, // Full scramble string
-  moves,            // Move states with status
-  currentIndex,     // Current move index
-  recoveryMoves,    // Moves to undo divergence
-  divergedMoves,    // Wrong moves made
-  isSolved,         // Cube solved state
-  solutionMoves,    // Solution move list
-}
-```
-
-### useTimer
-
-Timer with inspection phase:
-
-```typescript
+type TabType = 'timer' | 'solves' | 'simulator' | 'settings'
+type SolveViewMode = 'list' | 'results' | 'stats' | 'replay'
 type TimerStatus = 'idle' | 'inspection' | 'running' | 'stopped'
 
-{
-  status,
-  time,             // Current time in ms
-  startInspection,  // Start inspection phase
-  startTimer,       // Start running timer
-  stopTimer,        // Stop and return final time
-  reset,            // Reset to idle
-}
-```
-
-### useSolves
-
-Solve history with localStorage persistence:
-
-```typescript
 interface Solve {
   id: string
   time: number
@@ -471,497 +501,228 @@ interface Solve {
   cfopAnalysis?: CFOPAnalysis
   gyroData?: GyroFrame[]
   moveTimings?: MoveFrame[]
+  isManual?: boolean
+  isRepeatedScramble?: boolean
 }
 
-{
-  solves,           // Solve array
-  addSolve,         // Add new solve
-  deleteSolve,      // Remove solve
-  updateSolve,      // Update solve data
-  clearAll,         // Clear all solves
-  getStats,         // Calculate statistics
-}
-```
-
-### useSettings
-
-Application settings:
-
-```typescript
-interface AppSettings {
-  animationSpeed: number  // Turn animation speed (5-50)
-  gyroEnabled: boolean    // Record gyro data
-  theme: string           // Theme key
+interface GyroFrame {
+  time: number
+  quaternion: { x: number; y: number; z: number; w: number }
 }
 
-{
-  settings,
-  updateSetting,    // Update single setting
-  resetSettings,    // Reset to defaults
+interface MoveFrame {
+  time: number
+  move: string
 }
 ```
 
 ---
 
-## Cube Logic & Algorithms
+## Data Flow Diagrams
 
-### Move Representation
-
-```typescript
-type MoveBase = 'U' | 'D' | 'L' | 'R' | 'F' | 'B'
-type MoveModifier = '' | "'" | '2'
-type Move = `${MoveBase}${MoveModifier}`
-
-interface ParsedMove {
-  face: MoveBase
-  modifier: MoveModifier
-  original: string
-}
-```
-
-### Move Utilities
-
-```typescript
-parseMove("R'") // { face: 'R', modifier: "'", original: "R'" }
-parseScramble("R U R' U'") // ParsedMove[]
-getInverseMove(move) // Returns inverse move
-combineMove(a, b) // Combine same-face moves
-isSameFace(a, b) // Check if same face
-```
-
-### Face-Based State
-
-The cube is represented as 6 faces, each with 9 colors:
+### Move Processing Flow
 
 ```
-      ┌─────┐
-      │  U  │
-┌─────┼─────┼─────┬─────┐
-│  L  │  F  │  R  │  B  │
-└─────┼─────┼─────┴─────┘
-      │  D  │
-      └─────┘
-
-Index layout per face:
-┌───┬───┬───┐
-│ 0 │ 1 │ 2 │
-├───┼───┼───┤
-│ 3 │ 4 │ 5 │  (4 = center)
-├───┼───┼───┤
-│ 6 │ 7 │ 8 │
-└───┴───┴───┘
+GAN Smart Cube (Bluetooth)
+         │
+         ▼
+┌─────────────────────┐
+│    useGanCube       │ → Validates move format
+│    handleEvent()    │ → Updates quaternionRef
+└─────────────────────┘
+         │
+         ▼ onMove callback
+┌─────────────────────┐
+│    App.handleMove() │ → Checks calibration sequences
+└─────────────────────┘
+         │
+    ┌────┴────┬──────────────┬──────────────┐
+    ▼         ▼              ▼              ▼
+┌────────┐ ┌────────────┐ ┌────────────┐ ┌─────────────┐
+│cubeRef │ │updateCube  │ │updateCube  │ │trackMove()  │
+│.perform│ │State()     │ │Faces()     │ │(scramble    │
+│Move()  │ │(KPuzzle)   │ │(faces)     │ │tracker)     │
+└────────┘ └────────────┘ └────────────┘ └─────────────┘
+    │           │              │
+    ▼           ▼              ▼
+3D Render   facelets       State History
+            string         for CFOP
 ```
-
-### CFOP Analysis Algorithm
-
-Located in `src/lib/cfop-analyzer.ts`:
-
-1. **Cross Detection**: Checks if 4 edge pieces form a cross with correct center alignment
-2. **F2L Slots**: Checks corner-edge pairs in each slot
-3. **OLL Detection**: All top face pieces match top color
-4. **PLL Detection**: All faces solved (cube complete)
-
-```typescript
-function analyzeCFOP(moves: string[], stateHistory: CubeFaces[]): CFOPAnalysis {
-  // Iterate through state history
-  // Detect when each phase completes
-  // Return phase boundaries and moves
-}
-```
-
----
-
-## 3D Rendering
-
-### React Three Fiber Setup
-
-```tsx
-<Canvas camera={{ position: [6, 4.5, 6], fov: 31 }}>
-  <ambientLight intensity={0} />
-  <directionalLight position={[10, 10, 5]} intensity={0.8} />
-  <group scale={0.5}>
-    <RubiksCube
-      pattern={pattern}
-      quaternionRef={quaternionRef}
-      cubeRef={cubeRef}
-      animationSpeed={15}
-    />
-  </group>
-  <OrbitControls enablePan={false} minDistance={5.5} maxDistance={12} />
-  <Environment preset="sunset" />
-</Canvas>
-```
-
-### Cubie Rendering
-
-Each cubie (small cube) is rendered with:
-
-- **RoundedBox** for the inner body
-- **ExtrudeGeometry** for colored face stickers
-- Custom shapes for corners, edges, and centers
-
-```typescript
-type PieceType = 'corner' | 'edge' | 'center'
-
-// Face sticker uses physical material
-<meshPhysicalMaterial
-  color={color}
-  roughness={0.25}
-  metalness={0.28}
-  clearcoat={0.3}
-  clearcoatRoughness={0.1}
-  reflectivity={0.2}
-/>
-```
-
-### Move Animation
-
-Animations use `useFrame` for smooth layer rotation:
-
-```typescript
-useFrame((_, delta) => {
-  if (currentAnimation.current) {
-    // Rotate cubies in the layer
-    const rotQuat = new THREE.Quaternion().setFromAxisAngle(axisVector, rotationStep)
-    cubies.forEach((cubie) => {
-      cubie.position.applyAxisAngle(axisVector, rotationStep)
-      cubie.quaternion.premultiply(rotQuat)
-    })
-  }
-})
-```
-
-### Gyroscope Integration
-
-The cube model follows physical cube orientation:
-
-```typescript
-useFrame((_, delta) => {
-  if (groupRef.current && quaternionRef?.current) {
-    groupRef.current.quaternion.slerp(quaternionRef.current, 15 * delta)
-  }
-})
-```
-
----
-
-## Smart Cube Integration
-
-### Connection Flow
-
-1. User clicks "Connect Cube"
-2. Browser shows Bluetooth device picker
-3. `gan-web-bluetooth` library handles connection
-4. Subscribe to move and gyro events
-5. Request initial battery and facelet state
-
-### Event Handling
-
-```typescript
-const handleEvent = useCallback((event: GanCubeEvent) => {
-  if (event.type === 'GYRO') {
-    // Update quaternion ref
-    const rawQuat = new THREE.Quaternion(x, z, -y, w)
-    quaternionRef.current.copy(correctedQuat)
-  } else if (event.type === 'MOVE') {
-    onMoveRef.current?.(event.move)
-  } else if (event.type === 'BATTERY') {
-    setState((prev) => ({ ...prev, batteryLevel: event.batteryLevel }))
-  } else if (event.type === 'DISCONNECT') {
-    // Handle disconnection
-  }
-}, [])
-```
-
-### Calibration Gestures
-
-Quick calibration via move sequences:
-
-- **U U U U** (4 U moves): Reset gyroscope
-- **F F F F** (4 F moves): Sync cube state
-
-```typescript
-const checkCalibrationSequence = useCallback((move: string) => {
-  // Track recent moves
-  // Check for U4 or F4 pattern
-  // Return 'gyro' or 'cube' calibration type
-}, [])
-```
-
----
-
-## State Management
-
-### Local State
-
-- React `useState` for UI state
-- `useRef` for performance-critical data
-- `useMemo` for computed values
-
-### Persistence
-
-- `localStorage` for settings and solve history
-- Automatic save on state changes
-
-### Global State
-
-- Theme via React Context (`ThemeProvider`)
-- No external state library needed
-
----
-
-## Data Flow
 
 ### Solve Recording Flow
 
 ```
-GAN Cube → useGanCube.handleEvent() → onMove callback
-                                           ↓
-                                    App.handleMove()
-                                           ↓
-              ┌────────────────────────────┼────────────────────────────┐
-              ↓                            ↓                            ↓
-       trackMove()                  updateCubeState()             updateCubeFaces()
-    (useScrambleTracker)              (useCubeState)               (useCubeFaces)
-              ↓                            ↓                            ↓
-    Update scramble progress      Update KPattern           Update face colors
-              ↓                            ↓                            ↓
-              └────────────────────────────┼────────────────────────────┘
-                                           ↓
-                              gyroRecorder.recordMove()
-                                           ↓
-                              Check if solved → stopTimer()
-                                           ↓
-                                    analyzeCFOP()
-                                           ↓
-                                    addSolve() → localStorage
+Scramble Completed
+         │
+         ▼
+timer.startInspection()
+         │
+         ▼ First Move
+timer.startTimer() + gyroRecorder.startRecording()
+         │
+         ▼ Each Move
+gyroRecorder.recordMove()
+useCubeFaces.performMove() → stateHistory grows
+         │
+         ▼ Cube Solved (isSolved() returns true)
+timer.stopTimer() → finalTime
+gyroRecorder.stopRecording() → gyroData, moveTimings
+         │
+         ▼
+analyzeCFOP(history.moves, history.states)
+         │
+         ▼
+addSolve({
+  time,
+  scramble,
+  solution,
+  cfopAnalysis,
+  gyroData,
+  moveTimings
+})
+         │
+         ▼
+localStorage / Firebase
 ```
 
-### Render Flow
+### Component Hierarchy
 
 ```
-State Change → React re-render → useMemo computations
-                                          ↓
-                              useFrame (Three.js loop)
-                                          ↓
-                              Quaternion interpolation
-                              Animation stepping
-                                          ↓
-                              GPU render frame
-```
-
----
-
-## Configuration
-
-### Scene Configuration
-
-Located in `src/config/scene-config.ts`:
-
-```typescript
-interface SceneConfig {
-  light: {
-    ambient: { intensity: number }
-    directional1: { position: [x, y, z], intensity: number }
-    directional2: { position: [x, y, z], intensity: number }
-  }
-  material: {
-    face: { roughness, metalness, clearcoat, clearcoatRoughness, reflectivity }
-    inner: { roughness, metalness }
-  }
-  camera: { position: [x, y, z], fov, minDistance, maxDistance }
-  cube: { scale, cubeSize, gap }
-  environment: { preset: 'sunset' | 'studio' | ... }
-}
-```
-
-### Tailwind Configuration
-
-Extended with shadcn color system:
-
-```javascript
-theme: {
-  extend: {
-    colors: {
-      background: 'hsl(var(--background))',
-      foreground: 'hsl(var(--foreground))',
-      primary: { DEFAULT: '...', foreground: '...' },
-      secondary: { ... },
-      muted: { ... },
-      accent: { ... },
-      destructive: { ... },
-    }
-  }
-}
+App.tsx
+├── Header
+│   └── Navigation Tabs
+├── Main Content (based on activeTab)
+│   ├── Timer View
+│   │   ├── ScrambleNotation
+│   │   ├── CubeViewer (3D)
+│   │   ├── TimerDisplay / ManualTimerDisplay
+│   │   ├── SolveResults (after solve)
+│   │   └── RecentSolves
+│   ├── AccountPage
+│   │   ├── CFOPStatsWidget
+│   │   └── SolvesList
+│   ├── AchievementsPage
+│   ├── LeaderboardPage
+│   ├── Simulator
+│   └── SettingsPanel
+├── StatusBar
+├── Footer
+└── Modals
+    ├── ConnectionModal
+    ├── CalibrationModal
+    ├── CubeInfoModal
+    └── CommandPalette
 ```
 
 ---
 
-## Development
+## File Structure Reference
 
-### Available Scripts
-
-```bash
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # ESLint check
-npm run format       # Prettier format
-npm run format:check # Check formatting
 ```
-
-### Adding a New Theme
-
-1. Add theme definition to `src/lib/themes.ts`:
-
-```typescript
-myTheme: {
-  name: 'My Theme',
-  colors: {
-    bg: '#...',
-    bgSecondary: '#...',
-    // ... all color properties
-  }
-}
-```
-
-2. Theme will automatically appear in Settings panel
-
-### Adding a New Component
-
-1. Create component file in appropriate folder
-2. Use theme CSS variables for colors:
-
-```tsx
-style={{
-  backgroundColor: 'var(--theme-bgSecondary)',
-  color: 'var(--theme-text)'
-}}
-```
-
-3. Use `cn()` utility for conditional classes:
-
-```tsx
-import { cn } from '@/lib/utils'
-
-className={cn('base-classes', isActive && 'active-classes')}
-```
-
----
-
-## New Utilities & Architecture
-
-### Centralized Types (`src/types/index.ts`)
-
-All shared TypeScript types are now in a central location:
-
-```typescript
-import type { Solve, CFOPAnalysis, TimerStatus, TabType } from '@/types'
-```
-
-**Exported Types:**
-
-- `TabType` - Navigation tab types
-- `SolveViewMode` - Solve detail view modes
-- `TimerStatus` - Timer states (idle/inspection/running/stopped)
-- `GyroFrame` - Gyroscope data point
-- `MoveFrame` - Move with timestamp
-- `Solve` - Complete solve record
-- `AppSettings` - Application settings
-- `CFOPAnalysis` - Re-exported from cfop-analyzer
-
-### Formatting Utilities (`src/lib/format.ts`)
-
-Centralized formatting functions (no more duplicate `formatTime`):
-
-```typescript
-import { formatTime, formatDuration, formatTPS, formatDate, formatPercentage } from '@/lib/format'
-
-formatTime(12345) // "12.34"
-formatDuration(2500) // "2.50s"
-formatTPS(5.5) // "5.50"
-formatDate('2024-01-01') // "Jan 1, 2024 10:30 AM"
-formatPercentage(0.75) // "75%"
-```
-
-### Constants (`src/lib/constants.ts`)
-
-Shared constants eliminate magic values:
-
-```typescript
-import {
-  CUBE_COLORS,
-  CROSS_COLOR_MAP,
-  PHASE_COLORS,
-  CALIBRATION_SEQUENCE_TIMEOUT,
-  IDEAL_CFOP_SPLITS,
-} from '@/lib/constants'
-```
-
-### UI Components (`src/components/ui/`)
-
-Reusable themed UI components:
-
-```typescript
-import {
-  Button,
-  Card,
-  CardHeader,
-  CardTitle,
-  Kbd,
-  IconButton,
-  StatDisplay,
-  StatRow,
-} from '@/components/ui'
-```
-
-**Components:**
-
-- `Card`, `CardHeader`, `CardTitle` - Consistent card styling
-- `Kbd` - Keyboard key display
-- `IconButton` - Animated icon buttons with variants
-- `StatDisplay`, `StatRow` - Stat display components
-
-### New Hooks
-
-**`useKeyboardShortcuts`** - Declarative keyboard shortcuts:
-
-```typescript
-const shortcuts = [
-  { key: 'F2', handler: resetGyro },
-  { key: 'k', ctrlKey: true, handler: openPalette },
-]
-useKeyboardShortcuts(shortcuts)
-```
-
-**`useCalibrationSequence`** - Calibration gesture detection:
-
-```typescript
-const { calibrationType, resetSequence } = useCalibrationSequence(pattern)
-// Detects U4 (gyro) and F4 (cube) calibration sequences
-```
-
-**`useSolveSession`** - Main session orchestration (reduces App.tsx complexity):
-
-```typescript
-const session = useSolveSession()
-// Consolidates: cubeState, scrambleState, timer, solves, ganCube, calibration
+src/
+├── main.tsx                    # Entry point, provider tree
+├── App.tsx                     # Main orchestrator component
+├── App.css                     # Global app styles
+├── index.css                   # Tailwind base styles
+│
+├── components/
+│   ├── cube/
+│   │   ├── index.tsx          # CubeViewer (Canvas wrapper)
+│   │   └── RubiksCube.tsx     # Three.js cube mesh
+│   ├── layout/
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   └── StatusBar.tsx
+│   ├── ui/                    # Reusable UI components
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── tooltip.tsx
+│   │   └── ...
+│   ├── account-page.tsx
+│   ├── achievements-page.tsx
+│   ├── cfop-analysis.tsx
+│   ├── calibration-modal.tsx
+│   ├── connection-modal.tsx
+│   ├── scramble-notation.tsx
+│   ├── settings-panel.tsx
+│   ├── simulator.tsx
+│   ├── solve-results.tsx
+│   ├── timer-display.tsx
+│   └── ...
+│
+├── hooks/
+│   ├── useGanCube.ts          # Bluetooth smart cube connection
+│   ├── useTimer.ts            # Solve timer
+│   ├── useManualTimer.ts      # Spacebar timer for non-smart cube
+│   ├── useScrambleTracker.ts  # Scramble execution tracking
+│   ├── useCubeState.ts        # KPuzzle-based cube state
+│   ├── useCubeFaces.ts        # Face-array cube state
+│   ├── useGyroRecorder.ts     # Gyro/move recording
+│   ├── useSolves.ts           # Solve history management
+│   ├── useSettings.ts         # App settings
+│   └── useCalibrationSequence.ts
+│
+├── lib/
+│   ├── cfop-analyzer.ts       # CFOP phase detection algorithm
+│   ├── cube-faces.ts          # Face-based cube operations
+│   ├── cube-state.ts          # cubing library integration
+│   ├── move-utils.ts          # Move parsing utilities
+│   ├── solve-stats.ts         # Statistics calculations
+│   ├── themes.ts              # Theme definitions
+│   ├── firebase.ts            # Firebase configuration
+│   ├── format.ts              # Time/date formatting
+│   └── constants.ts           # Shared constants
+│
+├── contexts/
+│   ├── SolveSessionContext.tsx
+│   ├── AuthContext.tsx
+│   ├── ExperienceContext.tsx
+│   └── AchievementsContext.tsx
+│
+├── types/
+│   ├── index.ts               # Central type definitions
+│   └── achievements.ts
+│
+└── config/
+    └── scene-config.ts        # 3D scene configuration
 ```
 
 ---
 
-## Performance Considerations
+## Key External Dependencies
 
-1. **Refs for High-Frequency Updates**: Quaternion and callbacks use refs
-2. **Memoization**: Heavy computations wrapped in `useMemo`
-3. **Animation Frame**: Three.js animations in `useFrame`
-4. **Lazy Loading**: Cube library loaded asynchronously
-5. **Debounced Renders**: State batching for multiple updates
+| Package | Purpose |
+|---------|---------|
+| `gan-web-bluetooth` | GAN Smart Cube Bluetooth protocol |
+| `cubing` | Cube state, scramble generation, algorithms |
+| `three` | 3D rendering engine |
+| `@react-three/fiber` | React renderer for Three.js |
+| `@react-three/drei` | Three.js helpers (OrbitControls, etc.) |
+| `firebase` | Authentication and cloud storage |
+| `framer-motion` | Animations |
+| `tailwindcss` | Styling |
 
 ---
 
-## Browser Requirements
+## Quick Reference
 
-- **Web Bluetooth API**: Required for smart cube connection
-- **WebGL 2**: Required for Three.js rendering
-- **Modern Browser**: Chrome/Edge recommended for Bluetooth
+### Starting a Solve Session
+1. Connect smart cube (or use manual timer)
+2. Scramble is generated and displayed
+3. Execute scramble moves on physical cube
+4. When complete, enter inspection mode
+5. First solve move starts timer
+6. Solve the cube
+7. Timer stops, CFOP analysis runs
+8. Review results, start next solve
+
+### Keyboard Shortcuts
+- `F2` - Reset gyroscope
+- `F4` - Sync cube state to solved
+- `Ctrl+K` - Open command palette
+- `Space` - Manual timer (when disconnected)
+
+### Gesture Shortcuts (on cube)
+- `4x U` - Reset gyroscope
+- `4x F` - Sync cube state
+- `4x D` - New scramble (when timer stopped)

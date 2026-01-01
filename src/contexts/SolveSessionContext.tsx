@@ -14,6 +14,7 @@ import { useGyroRecorder } from '@/hooks/useGyroRecorder'
 import { useSolves } from '@/hooks/useSolves'
 import { useExperience } from '@/contexts/ExperienceContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
+import { useSettings } from '@/hooks/useSettings'
 import { analyzeCFOP, type CFOPAnalysis } from '@/lib/cfop-analyzer'
 import type { CubeFaces } from '@/lib/cube-faces'
 import type { GyroFrame, MoveFrame } from '@/types'
@@ -66,6 +67,8 @@ interface SolveSessionContextValue {
 const SolveSessionContext = createContext<SolveSessionContextValue | null>(null)
 
 export function SolveSessionProvider({ children }: { children: ReactNode }) {
+  const { settings } = useSettings()
+
   const [state, setState] = useState<SolveSessionState>({
     scramble: '',
     isRepeatedScramble: false,
@@ -88,10 +91,16 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
     triggerNewScrambleRef.current = triggerNewScramble
   }, [triggerNewScramble])
 
-  const timer = useTimer()
+  const timer = useTimer({
+    inspectionTime: settings.inspectionTime,
+    customInspectionTime: settings.customInspectionTime,
+  })
   const manualTimer = useManualTimer({
     enabled: manualTimerEnabled,
     onNextScramble: () => triggerNewScrambleRef.current(),
+    inspectionTime: settings.inspectionTime,
+    customInspectionTime: settings.customInspectionTime,
+    holdThreshold: settings.holdThreshold,
   })
   const gyroRecorder = useGyroRecorder()
   const { addSolve } = useSolves()

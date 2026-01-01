@@ -14,6 +14,7 @@ interface ScrambleNotationProps {
   isManual?: boolean
   manualScramble?: string
   isRepeatedScramble?: boolean
+  inspectionRemaining?: number
 }
 
 function MoveNotation({
@@ -72,12 +73,14 @@ function RecoveryMoveNotation({ move }: { move: ParsedMove }) {
   )
 }
 
-export function ScrambleNotation({ trackerState, timerStatus, time, isManual, manualScramble, isRepeatedScramble }: ScrambleNotationProps) {
+export function ScrambleNotation({ trackerState, timerStatus, time, isManual, manualScramble, isRepeatedScramble, inspectionRemaining = 0 }: ScrambleNotationProps) {
   const { status, moves, originalScramble, recoveryMoves, shouldResetCube } = trackerState
   const isScrambling = status === 'scrambling'
   const isDiverged = status === 'diverged'
   const showScrambleMoves = isScrambling || isDiverged
   const isInspection = timerStatus === 'inspection'
+  const hasInspectionCountdown = isInspection && inspectionRemaining > 0
+  const inspectionSeconds = Math.ceil(inspectionRemaining / 1000)
   const isRunning = timerStatus === 'running'
   const isStopped = timerStatus === 'stopped'
 
@@ -193,10 +196,34 @@ export function ScrambleNotation({ trackerState, timerStatus, time, isManual, ma
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="text-xl font-medium tracking-widest md:text-3xl"
-            style={{ color: 'var(--theme-accent)' }}
+            className="flex flex-col items-center gap-2"
           >
-            inspecting...
+            {hasInspectionCountdown ? (
+              <>
+                <div
+                  className="text-5xl font-bold tabular-nums tracking-tight md:text-7xl"
+                  style={{ 
+                    color: inspectionSeconds <= 3 
+                      ? 'var(--theme-error)' 
+                      : inspectionSeconds <= 8 
+                        ? 'var(--theme-accent)' 
+                        : 'var(--theme-text)' 
+                  }}
+                >
+                  {inspectionSeconds}
+                </div>
+                <div className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+                  make a move to start
+                </div>
+              </>
+            ) : (
+              <div
+                className="text-xl font-medium tracking-widest md:text-3xl"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                inspecting...
+              </div>
+            )}
           </motion.div>
         )}
 
