@@ -59,13 +59,13 @@ export class GanAdapter extends BaseAdapter {
 
     switch (event.type) {
       case 'MOVE':
-        if (VALID_MOVE_REGEX.test(event.move)) {
+        if (event.move && VALID_MOVE_REGEX.test(event.move)) {
           this.emitMove(event.move, timestamp)
         }
         break
 
       case 'GYRO':
-        if (this.capabilities.gyroscope) {
+        if (this.capabilities.gyroscope && event.quaternion) {
           this.emitGyro(
             {
               x: event.quaternion.x,
@@ -79,11 +79,15 @@ export class GanAdapter extends BaseAdapter {
         break
 
       case 'BATTERY':
-        this.emitBattery(event.batteryLevel, timestamp)
+        if (event.batteryLevel !== undefined) {
+          this.emitBattery(event.batteryLevel, timestamp)
+        }
         break
 
       case 'FACELETS':
-        this.emitFacelets(event.facelets, timestamp)
+        if (event.facelets) {
+          this.emitFacelets(event.facelets, timestamp)
+        }
         break
 
       case 'DISCONNECT':
