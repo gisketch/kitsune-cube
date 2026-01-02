@@ -196,7 +196,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
                         Kitsune Cube.
                       </p>
                       <a
-                        href="https://discord.gg/kitsunecube"
+                        href="https://discord.gg/XPQr4wpQVg"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-3 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:opacity-90"

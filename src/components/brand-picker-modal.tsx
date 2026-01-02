@@ -179,7 +179,7 @@ export function BrandPickerModal({
               </div>
             </div>
             <a
-              href="https://discord.gg/kitsune"
+              href="https://discord.gg/XPQr4wpQVg"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors hover:opacity-90"
