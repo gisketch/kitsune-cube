@@ -24,15 +24,25 @@ export interface FeaturedAnnouncement {
 }
 
 export const FEATURED_ANNOUNCEMENT: FeaturedAnnouncement | null = {
-  id: 'multi-brand-v1',
-  title: 'Multi-Brand Smart Cube Support! 🎮',
-  description: 'Connect MoYu, QiYi, and GiiKER smart cubes (experimental). GAN cubes fully supported with gyroscope for solve replays.',
+  id: 'cfop-timing-v1',
+  title: 'Real Recognition vs Execution Timing! 🧠',
+  description: 'CFOP analysis now shows actual recognition and execution times based on your solve data, not estimated ratios.',
   version: VERSION.version,
   date: VERSION.commitDate,
-  icon: 'sparkles',
+  icon: 'zap',
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
+  {
+    version: '0.0.49',
+    date: '2026-01-03',
+    title: 'Real CFOP Recognition Timing',
+    changes: [
+      { type: 'feature', text: 'Real recognition vs execution timing from actual solve data' },
+      { type: 'improvement', text: 'Cross phase no longer shows recognition (happens in inspection)' },
+      { type: 'improvement', text: 'Tooltips now display accurate timing breakdowns' },
+    ],
+  },
   {
     version: '0.0.44',
     date: '2026-01-03',

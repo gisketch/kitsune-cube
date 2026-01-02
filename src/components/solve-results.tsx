@@ -23,6 +23,7 @@ import { ConfirmDeleteModal } from '@/components/confirm-delete-modal'
 import { formatTime, formatDuration } from '@/lib/format'
 import { useGoals } from '@/contexts/GoalsContext'
 import { useToast } from '@/contexts/ToastContext'
+import { calculatePhaseTimings, type CFOPTimingAnalysis } from '@/lib/cfop-timing'
 import type { CFOPAnalysis, CFOPPhase } from '@/lib/cfop-analyzer'
 import type { PhaseGoal } from '@/types/goals'
 import type { KPattern } from 'cubing/kpuzzle'
@@ -76,6 +77,7 @@ interface PhaseMarker {
   endIndex: number
   color: string
   widthPercent: number
+  recognitionRatio: number
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -100,23 +102,27 @@ function PhaseStatCard({
   moves,
   duration,
   tps,
-  recognitionRatio = 0.25,
+  recognitionTime = 0,
+  executionTime,
   displayMode = 'time',
   goal,
+  hideRecognition = false,
 }: {
   label: string
   moves: number
   duration: number
   tps: number
-  recognitionRatio?: number
+  recognitionTime?: number
+  executionTime?: number
   displayMode?: DisplayMode
   goal?: PhaseGoal
+  hideRecognition?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
   
-  const recognitionTime = duration * recognitionRatio
-  const executionTime = duration * (1 - recognitionRatio)
-  const recognitionPercent = Math.round(recognitionRatio * 100)
+  const actualExecutionTime = executionTime ?? duration
+  const totalPhaseTime = recognitionTime + actualExecutionTime
+  const recognitionPercent = totalPhaseTime > 0 ? Math.round((recognitionTime / totalPhaseTime) * 100) : 0
   const executionPercent = 100 - recognitionPercent
 
   const formatMs = (ms: number) => {
@@ -180,16 +186,18 @@ function PhaseStatCard({
                 className="my-1 h-px w-full"
                 style={{ backgroundColor: 'var(--theme-subAlt)' }}
               />
-              <div className="flex justify-between gap-4">
-                <span style={{ color: 'var(--theme-sub)' }}>Recognition</span>
-                <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
-                  {formatMs(recognitionTime)} ({recognitionPercent}%)
-                </span>
-              </div>
+              {!hideRecognition && (
+                <div className="flex justify-between gap-4">
+                  <span style={{ color: 'var(--theme-sub)' }}>Recognition</span>
+                  <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
+                    {formatMs(recognitionTime)} ({recognitionPercent}%)
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between gap-4">
                 <span style={{ color: 'var(--theme-sub)' }}>Execution</span>
                 <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
-                  {formatMs(executionTime)} ({executionPercent}%)
+                  {formatMs(actualExecutionTime)} ({hideRecognition ? 100 : executionPercent}%)
                 </span>
               </div>
               {goal && (
@@ -286,34 +294,36 @@ function CubeNet({ scramble }: { scramble: string }) {
 interface PhaseBarProps {
   label: string
   moves: number
-  recognitionRatio: number
+  recognitionTime: number
+  executionTime: number
   maxMoves: number
   maxDuration: number
   duration: number
   phaseColor: string
   goal?: PhaseGoal
   displayMode: DisplayMode
+  hideRecognition?: boolean
 }
 
 function VerticalBar({
   label,
   moves,
-  recognitionRatio,
+  recognitionTime,
+  executionTime,
   maxMoves,
   maxDuration,
   duration,
   phaseColor,
   goal,
   displayMode,
+  hideRecognition = false,
 }: PhaseBarProps) {
   const barValue = displayMode === 'moves' ? moves : duration
   const maxValue = displayMode === 'moves' ? maxMoves : maxDuration
   const barHeight = maxValue > 0 ? (barValue / maxValue) * 100 : 0
-  const recognitionHeight = recognitionRatio * 100
-  const executionRatio = 1 - recognitionRatio
-
-  const recognitionTime = duration * recognitionRatio
-  const executionTime = duration * executionRatio
+  const totalPhaseTime = recognitionTime + executionTime
+  const recognitionRatio = totalPhaseTime > 0 ? recognitionTime / totalPhaseTime : 0
+  const recognitionHeight = hideRecognition ? 0 : recognitionRatio * 100
 
   const goalValue = goal ? (displayMode === 'moves' ? goal.moves : goal.time) : null
   const goalHeight = goalValue && maxValue > 0 ? (goalValue / maxValue) * 100 : null
@@ -385,20 +395,22 @@ function VerticalBar({
           <div className="font-medium" style={{ color: phaseColor }}>
             {label}: {moves} moves
           </div>
-          <div className="flex items-center gap-2" style={{ color: 'var(--theme-sub)' }}>
-            <div
-              className="h-2 w-2 rounded-sm"
-              style={{ backgroundColor: phaseColor, opacity: 0.4 }}
-            />
-            <span>Recognition: {Math.round(recognitionRatio * 100)}%</span>
-            <span style={{ color: 'var(--theme-text)' }}>{formatMs(recognitionTime)}</span>
-          </div>
+          {!hideRecognition && (
+            <div className="flex items-center gap-2" style={{ color: 'var(--theme-sub)' }}>
+              <div
+                className="h-2 w-2 rounded-sm"
+                style={{ backgroundColor: phaseColor, opacity: 0.4 }}
+              />
+              <span>Recognition: {Math.round(recognitionRatio * 100)}%</span>
+              <span style={{ color: 'var(--theme-text)' }}>{formatMs(recognitionTime)}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2" style={{ color: 'var(--theme-sub)' }}>
             <div
               className="h-2 w-2 rounded-sm"
               style={{ backgroundColor: phaseColor, opacity: 0.9 }}
             />
-            <span>Execution: {Math.round(executionRatio * 100)}%</span>
+            <span>Execution: {hideRecognition ? '100%' : `${Math.round((1 - recognitionRatio) * 100)}%`}</span>
             <span style={{ color: 'var(--theme-text)' }}>{formatMs(executionTime)}</span>
           </div>
           {goal && (
@@ -432,21 +444,22 @@ function VerticalBar({
 function HorizontalBar({
   label,
   moves,
-  recognitionRatio,
+  recognitionTime,
+  executionTime,
   maxMoves,
   maxDuration,
   duration,
   phaseColor,
   goal,
   displayMode,
+  hideRecognition = false,
 }: PhaseBarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const barValue = displayMode === 'moves' ? moves : duration
   const maxValue = displayMode === 'moves' ? maxMoves : maxDuration
   const barWidth = maxValue > 0 ? (barValue / maxValue) * 100 : 0
-  const executionRatio = 1 - recognitionRatio
-  const recognitionTime = duration * recognitionRatio
-  const executionTime = duration * executionRatio
+  const totalPhaseTime = recognitionTime + executionTime
+  const recognitionRatio = totalPhaseTime > 0 && !hideRecognition ? recognitionTime / totalPhaseTime : 0
 
   const goalValue = goal ? (displayMode === 'moves' ? goal.moves : goal.time) : null
   const goalPosition = goalValue && maxValue > 0 ? (goalValue / maxValue) * 100 : null
@@ -538,16 +551,18 @@ function HorizontalBar({
             className="my-0.5 h-px w-full"
             style={{ backgroundColor: 'var(--theme-subAlt)' }}
           />
-          <div className="flex justify-between gap-4">
-            <span style={{ color: 'var(--theme-sub)' }}>Recognition</span>
-            <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
-              {formatMs(recognitionTime)} ({Math.round(recognitionRatio * 100)}%)
-            </span>
-          </div>
+          {!hideRecognition && (
+            <div className="flex justify-between gap-4">
+              <span style={{ color: 'var(--theme-sub)' }}>Recognition</span>
+              <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
+                {formatMs(recognitionTime)} ({Math.round(recognitionRatio * 100)}%)
+              </span>
+            </div>
+          )}
           <div className="flex justify-between gap-4">
             <span style={{ color: 'var(--theme-sub)' }}>Execution</span>
             <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
-              {formatMs(executionTime)} ({Math.round(executionRatio * 100)}%)
+              {formatMs(executionTime)} ({hideRecognition ? 100 : Math.round((1 - recognitionRatio) * 100)}%)
             </span>
           </div>
           {goal && (
@@ -587,6 +602,13 @@ function MobileCFOPBreakdown({
   f2lDuration,
   ollDuration,
   pllDuration,
+  crossExecution,
+  f2lRecognition,
+  f2lExecution,
+  ollRecognition,
+  ollExecution,
+  pllRecognition,
+  pllExecution,
   displayMode,
   onDisplayModeChange,
   goals,
@@ -599,6 +621,13 @@ function MobileCFOPBreakdown({
   f2lDuration: number
   ollDuration: number
   pllDuration: number
+  crossExecution: number
+  f2lRecognition: number
+  f2lExecution: number
+  ollRecognition: number
+  ollExecution: number
+  pllRecognition: number
+  pllExecution: number
   displayMode: DisplayMode
   onDisplayModeChange: (mode: DisplayMode) => void
   goals?: { cross?: PhaseGoal; f2l?: PhaseGoal; oll?: PhaseGoal; pll?: PhaseGoal }
@@ -607,10 +636,10 @@ function MobileCFOPBreakdown({
   const maxDuration = Math.max(crossDuration, f2lDuration, ollDuration, pllDuration, 1)
 
   const phases = [
-    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross },
-    { label: 'F2L', moves: f2lMoves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2lDuration, goal: goals?.f2l },
-    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll },
-    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll },
+    { label: 'Cross', moves: crossMoves, recognitionTime: 0, executionTime: crossExecution, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross, hideRecognition: true },
+    { label: 'F2L', moves: f2lMoves, recognitionTime: f2lRecognition, executionTime: f2lExecution, colorVar: '--theme-phaseF2L1', duration: f2lDuration, goal: goals?.f2l, hideRecognition: false },
+    { label: 'OLL', moves: ollMoves, recognitionTime: ollRecognition, executionTime: ollExecution, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll, hideRecognition: false },
+    { label: 'PLL', moves: pllMoves, recognitionTime: pllRecognition, executionTime: pllExecution, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll, hideRecognition: false },
   ]
 
   return (
@@ -668,13 +697,15 @@ function MobileCFOPBreakdown({
             key={phase.label}
             label={phase.label}
             moves={phase.moves}
-            recognitionRatio={phase.recognitionRatio}
+            recognitionTime={phase.recognitionTime}
+            executionTime={phase.executionTime}
             maxMoves={maxMoves}
             maxDuration={maxDuration}
             duration={phase.duration}
             phaseColor={`var(${phase.colorVar})`}
             goal={phase.goal}
             displayMode={displayMode}
+            hideRecognition={phase.hideRecognition}
           />
         ))}
       </div>
@@ -767,16 +798,23 @@ export function SolveResults({
   const ollMoves = analysis?.oll.moves.length ?? 0
   const pllMoves = analysis?.pll.moves.length ?? 0
 
-  const totalPhaseMoves = crossMoves + f2lMoves + ollMoves + pllMoves
-  const crossDuration = totalPhaseMoves > 0 ? (crossMoves / totalPhaseMoves) * time : 0
-  const f2lDuration = totalPhaseMoves > 0 ? (f2lMoves / totalPhaseMoves) * time : 0
-  const ollDuration = totalPhaseMoves > 0 ? (ollMoves / totalPhaseMoves) * time : 0
-  const pllDuration = totalPhaseMoves > 0 ? (pllMoves / totalPhaseMoves) * time : 0
+  const phaseTimings: CFOPTimingAnalysis | null = useMemo(() => {
+    if (!analysis || !solve?.moveTimings || solve.moveTimings.length === 0) {
+      return null
+    }
+    return calculatePhaseTimings(analysis, solve.moveTimings)
+  }, [analysis, solve?.moveTimings])
 
-  const f2l1Duration = f2lMoves > 0 ? (f2l1Moves / f2lMoves) * f2lDuration : 0
-  const f2l2Duration = f2lMoves > 0 ? (f2l2Moves / f2lMoves) * f2lDuration : 0
-  const f2l3Duration = f2lMoves > 0 ? (f2l3Moves / f2lMoves) * f2lDuration : 0
-  const f2l4Duration = f2lMoves > 0 ? (f2l4Moves / f2lMoves) * f2lDuration : 0
+  const totalPhaseMoves = crossMoves + f2lMoves + ollMoves + pllMoves
+  const crossDuration = phaseTimings?.cross.executionTime ?? (totalPhaseMoves > 0 ? (crossMoves / totalPhaseMoves) * time : 0)
+  const f2lDuration = phaseTimings?.aggregated.f2l.totalDuration ?? (totalPhaseMoves > 0 ? (f2lMoves / totalPhaseMoves) * time : 0)
+  const ollDuration = phaseTimings?.oll.totalDuration ?? (totalPhaseMoves > 0 ? (ollMoves / totalPhaseMoves) * time : 0)
+  const pllDuration = phaseTimings?.pll.totalDuration ?? (totalPhaseMoves > 0 ? (pllMoves / totalPhaseMoves) * time : 0)
+
+  const f2l1Duration = phaseTimings?.f2l[0]?.totalDuration ?? (f2lMoves > 0 ? (f2l1Moves / f2lMoves) * f2lDuration : 0)
+  const f2l2Duration = phaseTimings?.f2l[1]?.totalDuration ?? (f2lMoves > 0 ? (f2l2Moves / f2lMoves) * f2lDuration : 0)
+  const f2l3Duration = phaseTimings?.f2l[2]?.totalDuration ?? (f2lMoves > 0 ? (f2l3Moves / f2lMoves) * f2lDuration : 0)
+  const f2l4Duration = phaseTimings?.f2l[3]?.totalDuration ?? (f2lMoves > 0 ? (f2l4Moves / f2lMoves) * f2lDuration : 0)
 
   const crossTps = crossDuration > 0 ? crossMoves / (crossDuration / 1000) : 0
   const f2lTps = f2lDuration > 0 ? f2lMoves / (f2lDuration / 1000) : 0
@@ -811,13 +849,13 @@ export function SolveResults({
   } : undefined
 
   const phases = [
-    { label: 'Cross', moves: crossMoves, recognitionRatio: 0.15, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross },
-    { label: 'F2L 1', moves: f2l1Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L1', duration: f2l1Duration, goal: f2lGoalPerSlot },
-    { label: 'F2L 2', moves: f2l2Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L2', duration: f2l2Duration, goal: f2lGoalPerSlot },
-    { label: 'F2L 3', moves: f2l3Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L3', duration: f2l3Duration, goal: f2lGoalPerSlot },
-    { label: 'F2L 4', moves: f2l4Moves, recognitionRatio: 0.25, colorVar: '--theme-phaseF2L4', duration: f2l4Duration, goal: f2lGoalPerSlot },
-    { label: 'OLL', moves: ollMoves, recognitionRatio: 0.35, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll },
-    { label: 'PLL', moves: pllMoves, recognitionRatio: 0.3, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll },
+    { label: 'Cross', moves: crossMoves, recognitionTime: 0, executionTime: phaseTimings?.cross.executionTime ?? crossDuration, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross, hideRecognition: true },
+    { label: 'F2L 1', moves: f2l1Moves, recognitionTime: phaseTimings?.f2l[0]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[0]?.executionTime ?? f2l1Duration, colorVar: '--theme-phaseF2L1', duration: f2l1Duration, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 2', moves: f2l2Moves, recognitionTime: phaseTimings?.f2l[1]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[1]?.executionTime ?? f2l2Duration, colorVar: '--theme-phaseF2L2', duration: f2l2Duration, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 3', moves: f2l3Moves, recognitionTime: phaseTimings?.f2l[2]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[2]?.executionTime ?? f2l3Duration, colorVar: '--theme-phaseF2L3', duration: f2l3Duration, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 4', moves: f2l4Moves, recognitionTime: phaseTimings?.f2l[3]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[3]?.executionTime ?? f2l4Duration, colorVar: '--theme-phaseF2L4', duration: f2l4Duration, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'OLL', moves: ollMoves, recognitionTime: phaseTimings?.oll.recognitionTime ?? 0, executionTime: phaseTimings?.oll.executionTime ?? ollDuration, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll, hideRecognition: false },
+    { label: 'PLL', moves: pllMoves, recognitionTime: phaseTimings?.pll.recognitionTime ?? 0, executionTime: phaseTimings?.pll.executionTime ?? pllDuration, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll, hideRecognition: false },
   ]
 
   const { initialScrambledFacelets, replayPhases, allMoves, totalMoves, timeOffset } =
@@ -876,6 +914,7 @@ export function SolveResults({
             endIndex: currentIndex + cfop.cross.moves.length - 1,
             color: 'var(--theme-phaseCross)',
             widthPercent: (cfop.cross.moves.length / moveCount) * 100,
+            recognitionRatio: 0.15,
           })
           currentIndex += cfop.cross.moves.length
         }
@@ -894,6 +933,7 @@ export function SolveResults({
               endIndex: currentIndex + slot.moves.length - 1,
               color: f2lColors[i],
               widthPercent: (slot.moves.length / moveCount) * 100,
+              recognitionRatio: 0.25,
             })
             currentIndex += slot.moves.length
           }
@@ -906,6 +946,7 @@ export function SolveResults({
             endIndex: currentIndex + cfop.oll.moves.length - 1,
             color: 'var(--theme-phaseOLL)',
             widthPercent: (cfop.oll.moves.length / moveCount) * 100,
+            recognitionRatio: 0.35,
           })
           currentIndex += cfop.oll.moves.length
         }
@@ -917,6 +958,7 @@ export function SolveResults({
             endIndex: currentIndex + cfop.pll.moves.length - 1,
             color: 'var(--theme-phasePLL)',
             widthPercent: (cfop.pll.moves.length / moveCount) * 100,
+            recognitionRatio: 0.30,
           })
         }
       }
@@ -1387,13 +1429,15 @@ export function SolveResults({
                         key={phase.label}
                         label={phase.label}
                         moves={phase.moves}
-                        recognitionRatio={phase.recognitionRatio}
+                        recognitionTime={phase.recognitionTime}
+                        executionTime={phase.executionTime}
                         maxMoves={maxMoves}
                         maxDuration={maxDuration}
                         duration={phase.duration}
                         phaseColor={`var(${phase.colorVar})`}
                         goal={phase.goal}
                         displayMode={displayMode}
+                        hideRecognition={phase.hideRecognition}
                       />
                     ))}
                 </div>
@@ -1460,14 +1504,27 @@ export function SolveResults({
                   {replayPhases.map((phase) => (
                     <div
                       key={phase.name}
-                      className="relative h-full cursor-pointer rounded-full transition-opacity hover:opacity-80"
-                      style={{
-                        width: `${phase.widthPercent}%`,
-                        backgroundColor: phase.color,
-                      }}
+                      className="relative flex h-full cursor-pointer overflow-hidden rounded-full transition-opacity hover:opacity-80"
+                      style={{ width: `${phase.widthPercent}%` }}
                       onClick={() => handleSeek(phase.startIndex)}
                       title={phase.name}
-                    />
+                    >
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${phase.recognitionRatio * 100}%`,
+                          backgroundColor: phase.color,
+                          opacity: 0.4,
+                        }}
+                      />
+                      <div
+                        className="h-full flex-1"
+                        style={{
+                          backgroundColor: phase.color,
+                          opacity: 0.9,
+                        }}
+                      />
+                    </div>
                   ))}
 
                   <div
@@ -1561,16 +1618,19 @@ export function SolveResults({
                     moves={crossMoves}
                     duration={crossDuration}
                     tps={crossTps}
-                    recognitionRatio={0.15}
+                    recognitionTime={0}
+                    executionTime={phaseTimings?.cross.executionTime ?? crossDuration}
                     displayMode={displayMode}
                     goal={goals.cross}
+                    hideRecognition
                   />
                   <PhaseStatCard
                     label="f2l"
                     moves={f2lMoves}
                     duration={f2lDuration}
                     tps={f2lTps}
-                    recognitionRatio={0.25}
+                    recognitionTime={phaseTimings?.aggregated.f2l.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.aggregated.f2l.executionTime ?? f2lDuration}
                     displayMode={displayMode}
                     goal={goals.f2l}
                   />
@@ -1579,7 +1639,8 @@ export function SolveResults({
                     moves={ollMoves}
                     duration={ollDuration}
                     tps={ollTps}
-                    recognitionRatio={0.35}
+                    recognitionTime={phaseTimings?.oll.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.oll.executionTime ?? ollDuration}
                     displayMode={displayMode}
                     goal={goals.oll}
                   />
@@ -1588,7 +1649,8 @@ export function SolveResults({
                     moves={pllMoves}
                     duration={pllDuration}
                     tps={pllTps}
-                    recognitionRatio={0.3}
+                    recognitionTime={phaseTimings?.pll.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.pll.executionTime ?? pllDuration}
                     displayMode={displayMode}
                     goal={goals.pll}
                   />
@@ -1602,16 +1664,19 @@ export function SolveResults({
                     moves={crossMoves}
                     duration={crossDuration}
                     tps={crossTps}
-                    recognitionRatio={0.15}
+                    recognitionTime={0}
+                    executionTime={phaseTimings?.cross.executionTime ?? crossDuration}
                     displayMode={displayMode}
                     goal={goals.cross}
+                    hideRecognition
                   />
                   <PhaseStatCard
                     label="f2l"
                     moves={f2lMoves}
                     duration={f2lDuration}
                     tps={f2lTps}
-                    recognitionRatio={0.25}
+                    recognitionTime={phaseTimings?.aggregated.f2l.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.aggregated.f2l.executionTime ?? f2lDuration}
                     displayMode={displayMode}
                     goal={goals.f2l}
                   />
@@ -1620,7 +1685,8 @@ export function SolveResults({
                     moves={ollMoves}
                     duration={ollDuration}
                     tps={ollTps}
-                    recognitionRatio={0.35}
+                    recognitionTime={phaseTimings?.oll.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.oll.executionTime ?? ollDuration}
                     displayMode={displayMode}
                     goal={goals.oll}
                   />
@@ -1629,7 +1695,8 @@ export function SolveResults({
                     moves={pllMoves}
                     duration={pllDuration}
                     tps={pllTps}
-                    recognitionRatio={0.3}
+                    recognitionTime={phaseTimings?.pll.recognitionTime ?? 0}
+                    executionTime={phaseTimings?.pll.executionTime ?? pllDuration}
                     displayMode={displayMode}
                     goal={goals.pll}
                   />
@@ -1649,6 +1716,13 @@ export function SolveResults({
             f2lDuration={f2lDuration}
             ollDuration={ollDuration}
             pllDuration={pllDuration}
+            crossExecution={phaseTimings?.cross.executionTime ?? crossDuration}
+            f2lRecognition={phaseTimings?.aggregated.f2l.recognitionTime ?? 0}
+            f2lExecution={phaseTimings?.aggregated.f2l.executionTime ?? f2lDuration}
+            ollRecognition={phaseTimings?.oll.recognitionTime ?? 0}
+            ollExecution={phaseTimings?.oll.executionTime ?? ollDuration}
+            pllRecognition={phaseTimings?.pll.recognitionTime ?? 0}
+            pllExecution={phaseTimings?.pll.executionTime ?? pllDuration}
             displayMode={displayMode}
             onDisplayModeChange={setDisplayMode}
             goals={{
