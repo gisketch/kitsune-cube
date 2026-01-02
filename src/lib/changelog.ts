@@ -24,15 +24,25 @@ export interface FeaturedAnnouncement {
 }
 
 export const FEATURED_ANNOUNCEMENT: FeaturedAnnouncement | null = {
-  id: 'launch-v1',
-  title: 'Kitsune Cube is Live! 🎉',
-  description: 'Track your solves, connect your GAN smart cube, compete on leaderboards, and unlock achievements. Now featuring Catppuccin and Rosé Pine themes!',
+  id: 'multi-brand-v1',
+  title: 'Multi-Brand Smart Cube Support! 🎮',
+  description: 'Connect MoYu, QiYi, and GiiKER smart cubes (experimental). GAN cubes fully supported with gyroscope for solve replays.',
   version: VERSION.version,
   date: VERSION.commitDate,
-  icon: 'rocket',
+  icon: 'sparkles',
 }
 
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
+  {
+    version: '0.0.44',
+    date: '2026-01-03',
+    title: 'Multi-Brand Smart Cube Support',
+    changes: [
+      { type: 'feature', text: 'Added MoYu, QiYi, and GiiKER smart cube support (Beta)' },
+      { type: 'feature', text: 'New brand picker modal with tooltip showing supported models' },
+      { type: 'improvement', text: 'Redesigned landing page cube support section' },
+    ],
+  },
   {
     version: '0.0.42',
     date: '2026-01-03',

@@ -7,7 +7,7 @@ const ROADMAP = [
     title: 'Core Features',
     status: 'completed',
     items: [
-      'Smart cube connectivity (GAN)',
+      'Smart cube connectivity (GAN, MoYu, QiYi, GiiKER)',
       'Full solve replays with gyroscope',
       'CFOP phase analysis',
       'Gamification (XP & levels)',
@@ -20,10 +20,10 @@ const ROADMAP = [
     title: 'Priority Features',
     status: 'in-progress',
     items: [
-      'Support for other smart cubes (MoYu, QiYi, etc.)',
       'Smarter cube rotation detection',
       'Roux & ZZ method analyzers',
       'csTimer import/export support',
+      'More smart cube brand support',
     ],
   },
   {

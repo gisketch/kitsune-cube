@@ -1,29 +1,56 @@
 import { motion } from 'framer-motion'
-import { Bluetooth, Box } from 'lucide-react'
+import { Bluetooth, Box, FlaskConical, Check, Compass } from 'lucide-react'
 
-const SUPPORTED_CUBES = [
+type CubeBrand = {
+  name: string
+  color: string
+  hasGyro: boolean
+  featured: string[]
+  moreCount?: number
+  experimental?: boolean
+  description: string
+}
+
+const CUBE_BRANDS: CubeBrand[] = [
   {
-    name: 'GAN 12 UI',
-    description: 'Premium flagship with intelligent tracking',
+    name: 'GAN',
+    color: '#22c55e',
+    hasGyro: true,
+    description: 'Full support with gyroscope for solve replays',
+    featured: ['GAN 14 ui FreePlay', 'GAN 12 ui', 'GAN 356i Carry 2'],
+    moreCount: 7,
   },
   {
-    name: 'GAN 356i',
-    description: 'Reliable smart cube for all levels',
+    name: 'MoYu',
+    color: '#ef4444',
+    hasGyro: false,
+    experimental: true,
+    description: 'Move tracking for timing and analysis',
+    featured: ['WeiLong V10 AI', 'MoYu AI 2023'],
   },
   {
-    name: 'GAN 356i Carry',
-    description: 'Portable with built-in battery',
+    name: 'QiYi',
+    color: '#3b82f6',
+    hasGyro: false,
+    experimental: true,
+    description: 'Affordable smart cube connectivity',
+    featured: ['QiYi AI Smart Cube'],
   },
   {
-    name: 'GAN 356i V3',
-    description: 'Latest gen with improved sensors',
+    name: 'GiiKER',
+    color: '#a855f7',
+    hasGyro: false,
+    experimental: true,
+    description: 'Classic connected cube support',
+    featured: ['GiiKER i3S', 'GiiKER i2'],
+    moreCount: 1,
   },
 ]
 
 export function SupportedCubes() {
   return (
     <section id="cubes" className="px-6 py-20">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -38,44 +65,102 @@ export function SupportedCubes() {
             </h2>
           </div>
           <p className="mx-auto max-w-2xl text-lg" style={{ color: 'var(--theme-sub)' }}>
-            Connect via Bluetooth for real-time move tracking, gyroscope data, and battery monitoring.
+            Connect via Bluetooth for real-time tracking, analysis, and more.
           </p>
         </motion.div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {SUPPORTED_CUBES.map((cube, index) => (
+        <div className="grid gap-6 md:grid-cols-2">
+          {CUBE_BRANDS.map((brand, index) => (
             <motion.div
-              key={cube.name}
-              initial={{ opacity: 0, y: 30 }}
+              key={brand.name}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
-              className="rounded-xl p-6 text-center transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: 'var(--theme-bg-secondary)', border: '1px solid var(--theme-sub-alt)' }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="relative overflow-hidden rounded-2xl p-6"
+              style={{
+                backgroundColor: 'var(--theme-bg-secondary)',
+                border: `1px solid ${brand.color}30`,
+              }}
             >
-              <div className="mb-4 flex justify-center">
-                <Box className="h-12 w-12" style={{ color: 'var(--theme-accent)' }} />
+              <div
+                className="absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10"
+                style={{ backgroundColor: brand.color }}
+              />
+              
+              <div className="relative">
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-12 w-12 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: `${brand.color}15`, color: brand.color }}
+                    >
+                      <Box className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold" style={{ color: 'var(--theme-text)' }}>
+                          {brand.name}
+                        </h3>
+                        {brand.experimental && (
+                          <span
+                            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase"
+                            style={{ backgroundColor: brand.color, color: 'white' }}
+                          >
+                            <FlaskConical className="h-3 w-3" />
+                            Beta
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+                        {brand.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 text-sm" style={{ color: brand.hasGyro ? brand.color : 'var(--theme-sub)' }}>
+                    <Compass className="h-4 w-4" />
+                    <span>{brand.hasGyro ? 'Gyroscope' : 'No Gyro'}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {brand.featured.map((cube) => (
+                    <div
+                      key={cube}
+                      className="flex items-center gap-2 text-sm"
+                      style={{ color: 'var(--theme-text)' }}
+                    >
+                      <Check className="h-4 w-4 flex-shrink-0" style={{ color: brand.color }} />
+                      <span>{cube}</span>
+                    </div>
+                  ))}
+                  {brand.moreCount && brand.moreCount > 0 && (
+                    <p className="pl-6 text-sm" style={{ color: 'var(--theme-sub)' }}>
+                      +{brand.moreCount} more model{brand.moreCount > 1 ? 's' : ''} supported
+                    </p>
+                  )}
+                </div>
               </div>
-              <h3 className="mb-2 font-bold" style={{ color: 'var(--theme-text)' }}>
-                {cube.name}
-              </h3>
-              <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
-                {cube.description}
-              </p>
             </motion.div>
           ))}
         </div>
 
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-8 text-center"
-          style={{ color: 'var(--theme-sub)' }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-8 rounded-xl p-4 text-center"
+          style={{ backgroundColor: 'var(--theme-bg-secondary)', border: '1px solid var(--theme-sub-alt)' }}
         >
-          More cubes coming soon • Manual timer also available
-        </motion.p>
+          <p className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+            <span style={{ color: 'var(--theme-accent)' }}>Beta cubes</span> are community-tested.{' '}
+            No smart cube? Use the <span style={{ color: 'var(--theme-text)' }}>manual timer</span> instead.
+          </p>
+        </motion.div>
       </div>
     </section>
   )

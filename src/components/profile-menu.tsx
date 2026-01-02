@@ -20,10 +20,14 @@ import {
   RotateCcw,
   Trophy,
   Users,
+  Bell,
+  Info,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useExperience } from '@/contexts/ExperienceContext'
+import { useChangelog } from '@/contexts/ChangelogContext'
 import { AuthModal } from '@/components/auth-modal'
+import { AboutModal } from '@/components/about-modal'
 
 interface ProfileMenuProps {
   isCloudSync?: boolean
@@ -56,9 +60,11 @@ export function ProfileMenu({
 }: ProfileMenuProps) {
   const { user, loading, logout } = useAuth()
   const { getXPData, loading: xpLoading, recentXPGain, clearRecentXPGain } = useExperience()
+  const { hasUnread, openChangelog } = useChangelog()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [showXPNotification, setShowXPNotification] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showAboutModal, setShowAboutModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const xpData = getXPData()
 
@@ -334,6 +340,48 @@ export function ProfileMenu({
               </button>
             ))}
 
+            <div className="my-1 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
+
+            <button
+              onClick={() => {
+                openChangelog()
+                setIsDropdownOpen(false)
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--theme-text)' }}
+            >
+              <div className="relative">
+                <Bell className="h-4 w-4" />
+                {hasUnread && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
+                    style={{ backgroundColor: 'var(--theme-error)' }}
+                  />
+                )}
+              </div>
+              <span>What's New</span>
+              {hasUnread && (
+                <span
+                  className="ml-auto rounded-full px-1.5 py-0.5 text-xs font-medium"
+                  style={{ backgroundColor: 'var(--theme-error)', color: 'var(--theme-bg)' }}
+                >
+                  New
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setShowAboutModal(true)
+                setIsDropdownOpen(false)
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--theme-text)' }}
+            >
+              <Info className="h-4 w-4" />
+              <span>About</span>
+            </button>
+
             {user && (
               <>
                 <div className="my-1 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
@@ -355,6 +403,7 @@ export function ProfileMenu({
         )}
       </AnimatePresence>
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <AboutModal isOpen={showAboutModal} onClose={() => setShowAboutModal(false)} />
     </div>
   )
 }

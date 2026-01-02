@@ -74,25 +74,34 @@ As a software developer and speedcubing enthusiast, I've been inspired by amazin
 
 ---
 
-## 🧊 Supported Cubes
+## 🧊 Supported Smart Cubes
 
-### ✅ Fully Supported
-| Cube | Status | Gyro Support |
-|------|--------|--------------|
-| GAN 12 UI | ✅ Tested | ✅ Yes |
-| GAN 356i V3 | ✅ Tested | ✅ Yes |
-| GAN 356i Carry | ✅ Tested | ✅ Yes |
-| GAN 356i Play | ✅ Tested | ✅ Yes |
-| All GAN Smart Cubes | ✅ Supported | ✅ Yes |
+### ✅ GAN (Fully Supported)
+| Cube | Gyro Support |
+|------|--------------|
+| GAN 12 UI | ✅ Yes |
+| GAN 356i V3 | ✅ Yes |
+| GAN 356i Carry | ✅ Yes |
+| GAN 356i Play | ✅ Yes |
+| All GAN Smart Cubes | ✅ Yes |
 
-### 🔄 Coming Soon
-| Cube | Status |
-|------|--------|
-| MoYu WeiLong AI | 🚧 In Development |
-| QiYi Smart Cube | 🚧 Planned |
-| Giiker Smart Cubes | 🚧 Planned |
+### 🧪 MoYu (Experimental)
+| Cube | Gyro Support |
+|------|--------------|
+| WeiLong V10 AI | ❌ No |
 
-> **Looking for testers!** If you own a non-GAN smart cube and want to help, join our [Discord](https://discord.gg/XPQr4wpQVg).
+### 🧪 QiYi (Experimental)
+| Cube | Gyro Support |
+|------|--------------|
+| AI Smart Cube | ❌ No |
+
+### 🧪 GiiKER (Experimental)
+| Cube | Gyro Support |
+|------|--------------|
+| i3S | ❌ No |
+| i2 | ❌ No |
+
+> **Experimental cubes are being actively tested.** If you own a MoYu, QiYi, or GiiKER smart cube, help us improve support by reporting issues on our [Discord](https://discord.gg/XPQr4wpQVg).
 
 ---
 

@@ -12,6 +12,7 @@ interface CalibrationModalProps {
   onSyncCube: () => void
   onRecalibrateGyro: () => void
   isConnected: boolean
+  hasGyroscope?: boolean
 }
 
 export function CalibrationModal({
@@ -21,6 +22,7 @@ export function CalibrationModal({
   onSyncCube,
   onRecalibrateGyro,
   isConnected,
+  hasGyroscope = true,
 }: CalibrationModalProps) {
   const cubeRef = useRef<RubiksCubeRef>(null)
   const quaternionRef = useRef(new THREE.Quaternion())
@@ -83,23 +85,27 @@ export function CalibrationModal({
                 Make sure the physical cube is solved, then press to sync the virtual cube
               </p>
 
-              <div className="my-2 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
+              {hasGyroscope && (
+                <>
+                  <div className="my-2 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
 
-              <button
-                onClick={onRecalibrateGyro}
-                disabled={!isConnected}
-                className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--theme-subAlt)',
-                  color: 'var(--theme-text)',
-                }}
-              >
-                <RotateCcw className="h-5 w-5" />
-                <span>Recalibrate Gyro</span>
-              </button>
-              <p className="text-center text-xs" style={{ color: 'var(--theme-sub)' }}>
-                Hold the cube with white on top and green facing you, then press to reset gyro
-              </p>
+                  <button
+                    onClick={onRecalibrateGyro}
+                    disabled={!isConnected}
+                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'var(--theme-subAlt)',
+                      color: 'var(--theme-text)',
+                    }}
+                  >
+                    <RotateCcw className="h-5 w-5" />
+                    <span>Recalibrate Gyro</span>
+                  </button>
+                  <p className="text-center text-xs" style={{ color: 'var(--theme-sub)' }}>
+                    Hold the cube with white on top and green facing you, then press to reset gyro
+                  </p>
+                </>
+              )}
             </div>
 
             {!isConnected && (
@@ -119,10 +125,12 @@ export function CalibrationModal({
                 Quick Gestures
               </p>
               <div className="space-y-1 text-xs" style={{ color: 'var(--theme-sub)' }}>
-                <p>
-                  <span style={{ color: 'var(--theme-accent)' }}>4× U moves</span> — Recalibrate
-                  gyro
-                </p>
+                {hasGyroscope && (
+                  <p>
+                    <span style={{ color: 'var(--theme-accent)' }}>4× U moves</span> — Recalibrate
+                    gyro
+                  </p>
+                )}
                 <p>
                   <span style={{ color: 'var(--theme-accent)' }}>4× F moves</span> — Sync cube state
                 </p>

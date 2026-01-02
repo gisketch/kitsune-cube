@@ -24,14 +24,14 @@ import { StatsWidget, MobileStatsButton } from '@/components/stats-widget'
 import { SEOHead } from '@/lib/seo'
 import { useCubeState } from '@/hooks/useCubeState'
 import { useCubeFaces } from '@/hooks/useCubeFaces'
-import { useGanCube, MAC_ADDRESS_STORAGE_KEY } from '@/hooks/useGanCube'
+import { useSmartCube, MAC_ADDRESS_STORAGE_KEY } from '@/hooks/useSmartCube'
 import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import { useSolves } from '@/hooks/useSolves'
 import { useSettings } from '@/hooks/useSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSolveSession } from '@/contexts/SolveSessionContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
-import { ConnectionModal } from '@/components/connection-modal'
+import { BrandPickerModal, SmartCubeConnectionModal } from '@/components/brand-picker-modal'
 import { CalibrationModal } from '@/components/calibration-modal'
 import { CubeInfoModal } from '@/components/cube-info-modal'
 import { generateScramble, SOLVED_FACELETS } from '@/lib/cube-state'
@@ -40,6 +40,7 @@ import { setCubeFaceColors } from '@/lib/cube-faces'
 import { getCubeColors } from '@/lib/themes'
 import { db, isOfflineMode } from '@/lib/firebase'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
+import type { CubeBrand } from '@/lib/cube-protocols'
 import type { KPattern } from 'cubing/kpuzzle'
 
 type TabType = 'timer' | 'account' | 'achievements' | 'leaderboard' | 'simulator' | 'settings'
@@ -357,7 +358,7 @@ function App() {
   )
 
   const {
-    connect,
+    connect: smartCubeConnect,
     disconnect,
     isConnected,
     isConnecting,
@@ -369,11 +370,30 @@ function App() {
     submitMacAddress,
     batteryLevel,
     refreshBattery,
-  } = useGanCube({
+    brand,
+    hasGyroscope,
+    setBrand,
+  } = useSmartCube({
     onMove: handleMove,
     savedMacAddress,
     onMacAddressResolved: handleMacAddressResolved,
   })
+
+  const [isBrandPickerOpen, setIsBrandPickerOpen] = useState(false)
+
+  const handleConnectClick = useCallback(() => {
+    if (brand) {
+      smartCubeConnect()
+    } else {
+      setIsBrandPickerOpen(true)
+    }
+  }, [brand, smartCubeConnect])
+
+  const handleSelectBrand = useCallback((selectedBrand: CubeBrand) => {
+    setBrand(selectedBrand)
+    setIsBrandPickerOpen(false)
+    smartCubeConnect(selectedBrand)
+  }, [setBrand, smartCubeConnect])
 
   useEffect(() => {
     if (!isConnected) return
@@ -384,18 +404,6 @@ function App() {
 
     return () => clearInterval(interval)
   }, [isConnected, gyroRecorder, quaternionRef])
-
-  const [modalState, setModalState] = useState<{
-    isOpen: boolean
-    type: 'success' | 'error'
-    title: string
-    message: string
-  }>({
-    isOpen: false,
-    type: 'success',
-    title: '',
-    message: '',
-  })
 
   const handleNewScramble = useCallback(async () => {
     setIsScrambling(true)
@@ -491,16 +499,15 @@ function App() {
         setIsCommandPaletteOpen((prev) => !prev)
       } else if (e.shiftKey && e.key === 'Enter' && !isConnected) {
         e.preventDefault()
-        connect()
+        handleConnectClick()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [resetGyro, handleSyncCube, isConnected, connect])
+  }, [resetGyro, handleSyncCube, isConnected, handleConnectClick])
 
   const closeModal = () => {
-    setModalState((prev) => ({ ...prev, isOpen: false }))
     if (error || isMacAddressRequired) clearError()
   }
 
@@ -516,24 +523,31 @@ function App() {
     >
       <SEOHead />
       <div className="flex flex-1 flex-col w-full max-w-7xl mx-auto">
-        <ConnectionModal
-          isOpen={modalState.isOpen || isMacAddressRequired || !!error}
+        <BrandPickerModal
+          isOpen={isBrandPickerOpen}
+          onClose={() => setIsBrandPickerOpen(false)}
+          onSelectBrand={handleSelectBrand}
+        />
+
+        <SmartCubeConnectionModal
+          isOpen={isMacAddressRequired || !!error}
           onClose={closeModal}
-          type={error || isMacAddressRequired ? 'error' : modalState.type}
+          type={error || isMacAddressRequired ? 'error' : 'success'}
           title={
             isMacAddressRequired
               ? 'Manual MAC Address Required'
               : error
                 ? 'Connection Failed'
-                : modalState.title
+                : 'Connected'
           }
           message={
             isMacAddressRequired
               ? 'Unable to determine cube MAC address automatically. Please enter it manually.'
-              : error || modalState.message
+              : error || ''
           }
           isMacRequired={isMacAddressRequired}
           onSubmitMac={submitMacAddress}
+          brand={brand}
         />
 
         <CalibrationModal
@@ -543,6 +557,7 @@ function App() {
           onSyncCube={handleSyncCube}
           onRecalibrateGyro={handleRecalibrateGyro}
           isConnected={isConnected}
+          hasGyroscope={hasGyroscope}
         />
 
         <CubeInfoModal
@@ -552,13 +567,15 @@ function App() {
           onResetGyro={resetGyro}
           onSyncCube={handleSyncCube}
           onDisconnect={disconnect}
+          brand={brand}
+          hasGyroscope={hasGyroscope}
         />
 
         <Header
           onNavigate={handleNavigate}
           isConnected={isConnected}
           isConnecting={isConnecting}
-          onConnect={connect}
+          onConnect={handleConnectClick}
           onDisconnect={disconnect}
           batteryLevel={batteryLevel}
           onCalibrate={() => setIsCalibrationOpen(true)}
@@ -626,7 +643,7 @@ function App() {
                               status={manualTimer.status}
                               time={manualTimer.time}
                               inspectionRemaining={manualTimer.inspectionRemaining}
-                              onConnect={connect}
+                              onConnect={handleConnectClick}
                             />
                           ) : (
                             <div className="relative aspect-square w-full max-w-sm">
@@ -718,7 +735,7 @@ function App() {
                             status={manualTimer.status}
                             time={manualTimer.time}
                             inspectionRemaining={manualTimer.inspectionRemaining}
-                            onConnect={connect}
+                            onConnect={handleConnectClick}
                           />
                         ) : (
                           <div className="relative aspect-square w-full max-w-[240px]">
@@ -739,7 +756,7 @@ function App() {
                           batteryLevel={batteryLevel}
                           isConnected={isConnected}
                           isConnecting={isConnecting}
-                          onConnect={connect}
+                          onConnect={handleConnectClick}
                           onOpenCubeInfo={handleOpenCubeInfo}
                         />
 
@@ -801,7 +818,7 @@ function App() {
                           status={manualTimer.status}
                           time={manualTimer.time}
                           inspectionRemaining={manualTimer.inspectionRemaining}
-                          onConnect={connect}
+                          onConnect={handleConnectClick}
                         />
                       ) : (
                         <div className="relative aspect-square w-full max-w-[240px] md:max-w-sm">
@@ -822,7 +839,7 @@ function App() {
                         batteryLevel={batteryLevel}
                         isConnected={isConnected}
                         isConnecting={isConnecting}
-                        onConnect={connect}
+                        onConnect={handleConnectClick}
                         onOpenCubeInfo={handleOpenCubeInfo}
                       />
 
@@ -874,7 +891,7 @@ function App() {
             if (isConnected) {
               disconnect()
             } else {
-              connect()
+              handleConnectClick()
             }
           }}
           onNavigate={handleNavigate}

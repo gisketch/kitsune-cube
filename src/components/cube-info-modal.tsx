@@ -1,5 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Battery, BatteryWarning, RotateCcw, RefreshCw, BluetoothOff } from 'lucide-react'
+import { X, Battery, BatteryWarning, RotateCcw, RefreshCw, BluetoothOff, FlaskConical, Compass } from 'lucide-react'
+import type { CubeBrand } from '@/lib/cube-protocols'
+import { getBrandInfo } from '@/lib/cube-protocols'
+
+const BRAND_LOGOS: Record<CubeBrand, string> = {
+  gan: '🟢',
+  moyu: '🔴',
+  qiyi: '🔵',
+  giiker: '🟡',
+  mock: '🧪',
+}
 
 interface CubeInfoModalProps {
   isOpen: boolean
@@ -8,6 +18,8 @@ interface CubeInfoModalProps {
   onResetGyro: () => void
   onSyncCube: () => void
   onDisconnect?: () => void
+  brand?: CubeBrand | null
+  hasGyroscope?: boolean
 }
 
 export function CubeInfoModal({
@@ -17,9 +29,12 @@ export function CubeInfoModal({
   onResetGyro,
   onSyncCube,
   onDisconnect,
+  brand,
+  hasGyroscope = true,
 }: CubeInfoModalProps) {
   const isLowBattery = batteryLevel !== null && batteryLevel <= 20
   const BatteryIcon = isLowBattery ? BatteryWarning : Battery
+  const brandInfo = brand ? getBrandInfo(brand) : null
 
   const getBatteryColor = () => {
     if (batteryLevel === null) return 'var(--theme-sub)'
@@ -53,9 +68,24 @@ export function CubeInfoModal({
               }}
             >
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
-                  Cube Information
-                </h2>
+                <div className="flex items-center gap-2">
+                  {brandInfo && <span className="text-xl">{BRAND_LOGOS[brand!]}</span>}
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
+                    {brandInfo?.displayName || 'Cube Information'}
+                  </h2>
+                  {brandInfo?.experimental && (
+                    <span
+                      className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      style={{
+                        backgroundColor: 'var(--theme-error)',
+                        color: 'var(--theme-bg)',
+                      }}
+                    >
+                      <FlaskConical className="h-3 w-3" />
+                      Beta
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={onClose}
                   className="rounded-lg p-1.5 transition-colors hover:bg-[var(--theme-subAlt)]"
@@ -66,6 +96,20 @@ export function CubeInfoModal({
               </div>
 
               <div className="space-y-6">
+                {brandInfo && (
+                  <div
+                    className="flex items-center gap-4 rounded-lg p-3"
+                    style={{ backgroundColor: 'var(--theme-bg)' }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Compass className="h-4 w-4" style={{ color: hasGyroscope ? 'var(--theme-accent)' : 'var(--theme-sub)' }} />
+                      <span className="text-sm" style={{ color: hasGyroscope ? 'var(--theme-text)' : 'var(--theme-sub)' }}>
+                        {hasGyroscope ? 'Gyroscope Enabled' : 'No Gyroscope'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div
                   className="flex items-center justify-between rounded-lg p-4"
                   style={{ backgroundColor: 'var(--theme-bg)' }}
@@ -103,25 +147,27 @@ export function CubeInfoModal({
                     Calibration
                   </h3>
 
-                  <button
-                    onClick={() => {
-                      onResetGyro()
-                      onClose()
-                    }}
-                    className="flex w-full items-center gap-3 rounded-lg p-3 transition-colors hover:bg-[var(--theme-subAlt)]"
-                    style={{
-                      backgroundColor: 'var(--theme-bg)',
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    <RotateCcw className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} />
-                    <div className="text-left">
-                      <div className="font-medium">Reset Gyro</div>
-                      <div className="text-xs" style={{ color: 'var(--theme-sub)' }}>
-                        Recalibrate cube orientation (U4)
+                  {hasGyroscope && (
+                    <button
+                      onClick={() => {
+                        onResetGyro()
+                        onClose()
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg p-3 transition-colors hover:bg-[var(--theme-subAlt)]"
+                      style={{
+                        backgroundColor: 'var(--theme-bg)',
+                        color: 'var(--theme-text)',
+                      }}
+                    >
+                      <RotateCcw className="h-5 w-5" style={{ color: 'var(--theme-accent)' }} />
+                      <div className="text-left">
+                        <div className="font-medium">Reset Gyro</div>
+                        <div className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+                          Recalibrate cube orientation (U4)
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {

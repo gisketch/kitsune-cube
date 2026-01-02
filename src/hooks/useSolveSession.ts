@@ -6,7 +6,7 @@ import { useTimer } from './useTimer'
 import { useSolves } from './useSolves'
 import { useGyroRecorder } from './useGyroRecorder'
 import { useSettings } from './useSettings'
-import { useGanCube } from './useGanCube'
+import { useSmartCube } from './useSmartCube'
 import { useCalibrationSequence } from './useCalibrationSequence'
 import { generateScramble } from '@/lib/cube-state'
 import { analyzeCFOP, type CFOPAnalysis } from '@/lib/cfop-analyzer'
@@ -71,8 +71,8 @@ export function useSolveSession() {
     [trackMove, timer, updateCubeState, updateCubeFaces, gyroRecorder, handleCalibration],
   )
 
-  const ganCube = useGanCube({ onMove: handleMove })
-  const { resetGyro, quaternionRef, isConnected } = ganCube
+  const smartCube = useSmartCube({ onMove: handleMove })
+  const { resetGyro, quaternionRef, isConnected, hasGyroscope } = smartCube
 
   useEffect(() => {
     if (cubeState?.pattern && !frozenPattern) {
@@ -203,7 +203,8 @@ export function useSolveSession() {
     solves,
     deleteSolve,
     settings,
-    ganCube,
+    smartCube,
+    hasGyroscope,
     lastAnalysis,
     lastSolveTime,
     lastMoveCount,

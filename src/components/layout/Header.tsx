@@ -20,9 +20,11 @@ import {
   Cloud,
   CloudOff,
   Bell,
+  Info,
 } from 'lucide-react'
 import { ProfileMenu } from '@/components/profile-menu'
 import { AuthModal } from '@/components/auth-modal'
+import { AboutModal } from '@/components/about-modal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChangelog } from '@/contexts/ChangelogContext'
 
@@ -60,6 +62,7 @@ export function Header({
   const { hasUnread, openChangelog } = useChangelog()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showAboutModal, setShowAboutModal] = useState(false)
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -149,6 +152,14 @@ export function Header({
         </button>
 
         <div className="hidden items-center gap-2 md:flex">
+          <button
+            onClick={() => setShowAboutModal(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:opacity-80"
+            style={{ backgroundColor: 'var(--theme-subAlt)' }}
+            title="About"
+          >
+            <Info className="h-4 w-4" style={{ color: 'var(--theme-text)' }} />
+          </button>
           <button
             onClick={openChangelog}
             className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:opacity-80"
@@ -294,6 +305,17 @@ export function Header({
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => { setShowAboutModal(true); setIsMobileMenuOpen(false) }}
+                className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors"
+                style={{
+                  color: 'var(--theme-text)',
+                  backgroundColor: 'var(--theme-bgSecondary)',
+                }}
+              >
+                <Info className="h-4 w-4" style={{ color: 'var(--theme-accent)' }} />
+                <span>About</span>
+              </button>
 
               <div className="my-2 h-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
 
@@ -372,6 +394,7 @@ export function Header({
         )}
       </AnimatePresence>
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <AboutModal isOpen={showAboutModal} onClose={() => setShowAboutModal(false)} />
     </>
   )
 }
