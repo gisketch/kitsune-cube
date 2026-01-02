@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://kitsunecube.app">Website</a> •
+  <a href="https://kitsunecube.com">Website</a> •
   <a href="https://discord.gg/XPQr4wpQVg">Discord</a> •
   <a href="https://ko-fi.com/gisketch">Support</a>
 </p>
