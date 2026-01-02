@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "npx tsx scripts/generate-version.ts && vite",
+    "build": "npx tsx scripts/generate-version.ts && tsc -b && vite build",
+    "version": "npx tsx scripts/generate-version.ts",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

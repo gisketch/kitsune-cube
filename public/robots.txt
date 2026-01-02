@@ -1,0 +1,27 @@
+# Kitsune Cube - robots.txt
+# https://kitsunecube.app
+
+User-agent: *
+Allow: /
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+# Sitemap location
+Sitemap: https://kitsunecube.app/sitemap.xml
+
+# Crawl-delay for considerate crawling
+Crawl-delay: 1

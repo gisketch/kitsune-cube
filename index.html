@@ -3,8 +3,149 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kitsune Cube</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>Kitsune Cube - Gamified Smart Cube Companion for Speedcubers</title>
+    <meta name="title" content="Kitsune Cube - Gamified Smart Cube Companion for Speedcubers" />
+    <meta name="description" content="The ultimate smart cube training app. Connect your GAN smart cube, track solves with CFOP analysis, earn achievements, compete on leaderboards, and watch replays with gyroscope support. Free for all cubers." />
+    <meta name="keywords" content="rubiks cube, smart cube, speedcubing, GAN cube, CFOP, cube timer, cube analyzer, speedcube timer, rubik's cube app, cube trainer, WCA, cubing, puzzle, 3x3, speed solving, cube achievements, cube leaderboard" />
+    <meta name="author" content="gisketch" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#f97316" />
+    <meta name="msapplication-TileColor" content="#0c0a09" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kitsunecube.app/" />
+    <meta property="og:title" content="Kitsune Cube - Gamified Smart Cube Companion for Speedcubers" />
+    <meta property="og:description" content="The ultimate smart cube training app. Connect your GAN smart cube, track solves with CFOP analysis, earn achievements, compete on leaderboards, and watch replays with gyroscope support." />
+    <meta property="og:image" content="https://kitsunecube.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Kitsune Cube - Smart Cube Companion App" />
+    <meta property="og:site_name" content="Kitsune Cube" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://kitsunecube.app/" />
+    <meta property="twitter:title" content="Kitsune Cube - Gamified Smart Cube Companion for Speedcubers" />
+    <meta property="twitter:description" content="The ultimate smart cube training app. Connect your GAN smart cube, track solves with CFOP analysis, earn achievements, compete on leaderboards, and watch replays." />
+    <meta property="twitter:image" content="https://kitsunecube.app/og-image.png" />
+    <meta property="twitter:creator" content="@glowthecoder" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://kitsunecube.app/" />
+    
+    <!-- Structured Data - WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Kitsune Cube",
+      "alternateName": "Smart Cube Companion",
+      "description": "A gamified smart cube companion app for speedcubers. Connect your smart cube, track solves with CFOP analysis, earn achievements, and compete on leaderboards.",
+      "url": "https://kitsunecube.app",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "browserRequirements": "Requires Chromium-based browser (Chrome, Edge, Brave) for smart cube connectivity",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "gisketch",
+        "url": "https://gisketch.com"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1"
+      },
+      "featureList": [
+        "Smart cube Bluetooth connectivity",
+        "Real-time move tracking",
+        "CFOP phase analysis",
+        "Gyroscope recording and replay",
+        "Achievement system with tiers",
+        "Global leaderboards",
+        "WCA-compliant scrambles",
+        "Cloud sync with account",
+        "Manual timer mode",
+        "Multiple themes"
+      ],
+      "screenshot": "https://kitsunecube.app/og-image.png",
+      "softwareVersion": "1.0.0"
+    }
+    </script>
+    
+    <!-- Structured Data - FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Kitsune Cube?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Kitsune Cube is a gamified smart cube companion app for speedcubers. It connects to your smart cube via Bluetooth and provides real-time solve tracking, CFOP analysis, achievements, leaderboards, and a full replay system with gyroscope support."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which smart cubes are supported?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "All GAN smart cubes are fully supported including GAN 12 UI, GAN 356i V3, GAN 356i Carry, and GAN 356i Play. Support for MoYu, QiYi, and Giiker cubes is in development."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Kitsune Cube free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Kitsune Cube is currently free with all features. In the future, there may be a Pro version to cover hosting costs, but core features will always remain free."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need a smart cube to use Kitsune Cube?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No! While smart cubes unlock advanced features like move tracking and CFOP analysis, you can use the manual timer mode with any regular Rubik's cube."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Are the scrambles WCA-compliant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! Scrambles are generated using cubing.js, the same library used by official WCA scramble generators. They're random-state scrambles that meet competition standards."
+          }
+        }
+      ]
+    }
+    </script>
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firebaseinstalls.googleapis.com" />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
   </head>
   <body>
     <div id="root"></div>

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { Footer, MobileFooter } from '@/components/layout/Footer'
 import { StatusBar, CubeConnectionStatus } from '@/components/layout/StatusBar'
 import { KeyboardHints } from '@/components/keyboard-hints'
 import { CommandPalette } from '@/components/command-palette'
@@ -17,6 +17,8 @@ import { AchievementsPage } from '@/components/achievements-page'
 import { LeaderboardPage } from '@/components/leaderboard-page'
 import { ManualTimerDisplay } from '@/components/manual-timer-display'
 import { SolvePage } from '@/components/solve-page'
+import { FAQPage } from '@/components/faq-page'
+import { SEOHead } from '@/lib/seo'
 import { useCubeState } from '@/hooks/useCubeState'
 import { useCubeFaces } from '@/hooks/useCubeFaces'
 import { useGanCube, MAC_ADDRESS_STORAGE_KEY } from '@/hooks/useGanCube'
@@ -508,6 +510,7 @@ function App() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: 'var(--theme-bg)' }}
     >
+      <SEOHead />
       <div className="flex flex-1 flex-col w-full max-w-7xl mx-auto">
         <ConnectionModal
           isOpen={modalState.isOpen || isMacAddressRequired || !!error}
@@ -658,12 +661,17 @@ function App() {
                 isCloudSync={isCloudSync}
               />
             } />
+            <Route path="/faq" element={<FAQPage />} />
           </Routes>
         </main>
 
         <div className="hidden md:block mt-auto">
           <KeyboardHints isConnected={isConnected} />
           <Footer />
+        </div>
+
+        <div className="md:hidden mt-auto">
+          <MobileFooter />
         </div>
 
         <CommandPalette
