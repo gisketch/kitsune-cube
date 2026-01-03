@@ -251,6 +251,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           if (tps > 5) {
             statsUpdate.tpsOver5Solves = userStats.tpsOver5Solves + 1
           }
+          statsUpdate.totalRotationDegrees = userStats.totalRotationDegrees + solution.length
         }
 
         const prevSolve = solves[0]
