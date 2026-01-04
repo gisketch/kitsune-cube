@@ -22,7 +22,7 @@ const FOOTER_LINKS = {
 }
 
 const SOCIAL_LINKS = [
-  { name: 'GitHub', icon: Github, href: 'https://github.com/kitsunecube' },
+  { name: 'GitHub', icon: Github, href: 'https://github.com/gisketch/kitsune-cube' },
   { name: 'Discord', icon: MessageCircle, href: 'https://discord.gg/XPQr4wpQVg' },
   { name: 'Ko-fi', icon: Coffee, href: 'https://ko-fi.com/kitsunecube' },
 ]
