@@ -204,7 +204,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           totalMoves: userStats.totalMoves + solution.length,
           avgSolveTime: newAvgSolveTime,
           bestSolveTime: newBestSolveTime,
-          currentStreak: streak.currentStreak
+          longestStreak: streak.longestStreak
         }
 
         if (!isManual) {
