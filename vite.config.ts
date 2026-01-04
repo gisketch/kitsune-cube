@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+      // Resolve gan-web-bluetooth to source files since dist may not be built
+      'gan-web-bluetooth': path.resolve(import.meta.dirname, 'node_modules/gan-web-bluetooth/src/index.ts'),
     },
   },
   worker: {
