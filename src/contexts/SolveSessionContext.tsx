@@ -106,7 +106,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
   const gyroRecorder = useGyroRecorder()
   const { addSolve, solves } = useSolves()
   const { addXP } = useExperience()
-  const { recordSolve, checkAndUpdateAchievements, stats: userStats } = useAchievements()
+  const { recordSolve, checkAndUpdateAchievements, streak, stats: userStats } = useAchievements()
   const { showAchievement, showPersonalBest } = useNotifications()
 
   const setScramble = useCallback((scramble: string) => {
@@ -204,6 +204,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           totalMoves: userStats.totalMoves + solution.length,
           avgSolveTime: newAvgSolveTime,
           bestSolveTime: newBestSolveTime,
+          longestStreak: streak.longestStreak
         }
 
         if (!isManual) {
@@ -281,6 +282,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
       showAchievement,
       showPersonalBest,
       userStats,
+      streak
     ],
   )
 

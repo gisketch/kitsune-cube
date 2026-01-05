@@ -242,7 +242,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     howToAchieve: 'Complete at least 5 solves per day to maintain your streak. Missing a day resets your streak to zero!',
     category: 'streak',
     icon: 'flame',
-    trackingKey: 'currentStreak',
+    trackingKey: 'longestStreak',
     tiers: [
       { tier: 'bronze', requirement: 3, xpReward: 100 },
       { tier: 'silver', requirement: 7, xpReward: 350 },
