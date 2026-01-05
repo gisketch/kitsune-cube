@@ -38,7 +38,7 @@ function MoveNotation({
       animate={{ opacity, scale }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ duration: 0.15 }}
-      className={`inline-block font-mono ${colorClass} ${
+      className={`inline-block w-[2ch] min-w-[2ch] max-w-[2ch] text-center font-mono ${colorClass} ${
         status === 'current' ? 'font-bold' : status === 'pending' ? 'font-normal' : 'font-medium'
       }`}
       style={!colorClass ? { color: 'var(--theme-text)' } : undefined}

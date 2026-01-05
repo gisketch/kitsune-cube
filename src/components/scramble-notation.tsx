@@ -46,7 +46,7 @@ function MoveNotation({
         color: getColor(),
       }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
-      className={`inline-block ${isCurrent || isRecovery ? 'font-bold' : isPending ? 'font-normal' : 'font-medium'}`}
+      className={`inline-block w-[2ch] min-w-[2ch] max-w-[2ch] text-center ${isCurrent || isRecovery ? 'font-bold' : isPending ? 'font-normal' : 'font-medium'}`}
     >
       {move}
     </motion.span>
@@ -111,7 +111,7 @@ export function ScrambleNotation({ trackerState, timerStatus, time, isManual, ma
               key={i}
               initial={{ opacity: 0.6 }}
               animate={{ opacity: 1 }}
-              className="inline-block font-bold"
+              className="inline-block font-bold w-[2ch] min-w-[2ch] max-w-[2ch] text-center"
               style={{ color: 'var(--theme-accent)' }}
             >
               {move}
