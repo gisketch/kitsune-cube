@@ -109,6 +109,7 @@ export function useSEO(customConfig?: Partial<SEOConfig>) {
     }
     if (config.ogImage) {
       updateMetaTag('og:image', config.ogImage, true)
+      updateMetaTag('twitter:image', config.ogImage, true)
     }
     
     updateMetaTag('twitter:title', config.title, true)

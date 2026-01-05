@@ -17,6 +17,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.3',
+    date: '2026-01-06',
+    title: 'Social Sharing & UI ✨',
+    icon: 'sparkles',
+    changes: [
+      { type: 'feature', text: 'Dynamic OG images for shared solves with scramble preview' },
+      { type: 'improvement', text: 'Achievement notifications now show unlock progress' },
+      { type: 'improvement', text: 'Mobile CFOP breakdown displays all 4 F2L slots individually' },
+    ],
+  },
+  {
     version: '0.1.2',
     date: '2026-01-06',
     title: 'Community Bug Fixes 🐛',

@@ -283,3 +283,64 @@ export async function fetchPublicSolve(solveId: string, userId?: string): Promis
     return null
   }
 }
+
+export interface SolveWithUserInfo {
+  solve: Solve | null
+  userInfo: { name?: string; avatar?: string } | null
+}
+
+export async function fetchPublicSolveWithUser(solveId: string, userId?: string): Promise<SolveWithUserInfo> {
+  if (!db || isOfflineMode) {
+    const localSolves = loadLocalSolves()
+    const solve = localSolves.find(s => s.id === solveId) || null
+    return { solve, userInfo: null }
+  }
+
+  try {
+    let solve: Solve | null = null
+    let foundUserId: string | undefined = userId
+
+    if (userId) {
+      const solveDoc = await getDoc(doc(db, 'users', userId, 'solves', solveId))
+      if (solveDoc.exists()) {
+        solve = { id: solveDoc.id, ...solveDoc.data() } as Solve
+      }
+    } else {
+      const solvesGroup = collectionGroup(db, 'solves')
+      const q = query(solvesGroup, where('solveId', '==', solveId))
+      const snapshot = await getDocs(q)
+      
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0]
+        solve = { id: docSnap.id, ...docSnap.data() } as Solve
+        const pathParts = docSnap.ref.path.split('/')
+        foundUserId = pathParts[1]
+      }
+    }
+
+    if (!solve) {
+      return { solve: null, userInfo: null }
+    }
+
+    let userInfo: { name?: string; avatar?: string } | null = null
+    if (foundUserId) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', foundUserId))
+        if (userDoc.exists()) {
+          const userData = userDoc.data()
+          userInfo = {
+            name: userData.displayName || 'Anonymous',
+            avatar: userData.photoURL || undefined,
+          }
+        }
+      } catch {
+        console.log('Could not fetch user info')
+      }
+    }
+
+    return { solve, userInfo }
+  } catch (error) {
+    console.error('Failed to fetch public solve with user:', error)
+    return { solve: null, userInfo: null }
+  }
+}

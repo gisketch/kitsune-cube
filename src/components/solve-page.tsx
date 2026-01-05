@@ -1,19 +1,59 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useSolves, fetchPublicSolve } from '@/hooks/useSolves'
+import { useSolves, fetchPublicSolveWithUser } from '@/hooks/useSolves'
 import { SolveResults } from '@/components/solve-results'
 import { useScrambleTracker } from '@/hooks/useScrambleTracker'
+import { useAuth } from '@/contexts/AuthContext'
+import { useSEO } from '@/lib/seo'
 import type { Solve } from '@/types'
+
+function formatTime(ms: number): string {
+  const totalSeconds = ms / 1000
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = (totalSeconds % 60).toFixed(2)
+  if (minutes > 0) {
+    return `${minutes}:${seconds.padStart(5, '0')}`
+  }
+  return `${seconds}s`
+}
 
 export function SolvePage() {
   const { userId, solveId } = useParams<{ userId?: string; solveId: string }>()
   const navigate = useNavigate()
   const { solves, deleteSolve } = useSolves()
   const { setScramble } = useScrambleTracker()
+  const { user } = useAuth()
   const [publicSolve, setPublicSolve] = useState<Solve | null>(null)
+  const [publicUserInfo, setPublicUserInfo] = useState<{ name?: string; avatar?: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   const localSolve = solves.find((s) => s.id === solveId)
+  const solve = localSolve || publicSolve
+
+  const ogImageUrl = useMemo(() => {
+    if (!solve) return undefined
+    
+    const params = new URLSearchParams()
+    params.set('time', solve.time.toString())
+    params.set('scramble', solve.scramble)
+    
+    if (localSolve && user) {
+      params.set('name', user.displayName || 'Anonymous')
+      if (user.photoURL) params.set('avatar', user.photoURL)
+    } else if (publicUserInfo) {
+      if (publicUserInfo.name) params.set('name', publicUserInfo.name)
+      if (publicUserInfo.avatar) params.set('avatar', publicUserInfo.avatar)
+    }
+    
+    return `https://kitsunecube.com/api/og-image?${params.toString()}`
+  }, [solve, localSolve, user, publicUserInfo])
+
+  useSEO(solve ? {
+    title: `${formatTime(solve.time)} Solve - Kitsune Cube`,
+    description: `Check out this ${formatTime(solve.time)} cube solve on Kitsune Cube!`,
+    ogImage: ogImageUrl,
+    ogType: 'article',
+  } : undefined)
 
   useEffect(() => {
     if (localSolve) {
@@ -27,13 +67,12 @@ export function SolvePage() {
     }
 
     setLoading(true)
-    fetchPublicSolve(solveId, userId).then((solve) => {
-      setPublicSolve(solve)
+    fetchPublicSolveWithUser(solveId, userId).then(({ solve: fetchedSolve, userInfo }) => {
+      setPublicSolve(fetchedSolve)
+      setPublicUserInfo(userInfo)
       setLoading(false)
     })
   }, [solveId, userId, localSolve])
-
-  const solve = localSolve || publicSolve
 
   if (loading) {
     return (
