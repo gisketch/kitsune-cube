@@ -18,6 +18,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+      'gan-web-bluetooth': path.resolve(
+        import.meta.dirname,
+        'node_modules/gan-web-bluetooth/src/index.ts',
+      ),
     },
   },
 })

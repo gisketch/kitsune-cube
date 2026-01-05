@@ -136,9 +136,10 @@ As a software developer and speedcubing enthusiast, I've been inspired by amazin
 - **Frontend** — React 19, TypeScript, Vite
 - **3D Graphics** — Three.js, React Three Fiber
 - **Styling** — Tailwind CSS, Framer Motion
-- **Cube Logic** — cubing.js (scrambles), gan-web-bluetooth
+- **Cube Logic** — cubing.js (scrambles), gan-web-bluetooth (chribot fork)
 - **Backend** — Firebase (Auth, Firestore)
 - **Charts** — Recharts
+- **Hosting** — Netlify
 
 ---
 
@@ -178,6 +179,45 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 ---
 
+## 📦 Versioning & Releases
+
+We use **Semantic Versioning** with `0.MINOR.PATCH` format during beta:
+
+| Type | When to use | Example |
+|------|-------------|---------|
+| `minor` | New features | `0.1.0` → `0.2.0` |
+| `patch` | Bug fixes | `0.1.0` → `0.1.1` |
+
+### Release Workflow
+
+```bash
+# 1. Update src/lib/changelog.ts with the NEW version first
+# 2. Run the release command
+npm run release:minor   # or release:patch
+
+# 3. Script will:
+#    ✓ Validate changelog matches new version
+#    ✓ Bump package.json version
+#    ✓ Generate version.json
+#    ✓ Commit, tag, and push
+#    ✓ Optionally deploy to Netlify
+```
+
+### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run release:minor` | Release with new features |
+| `npm run release:patch` | Release with bug fixes |
+| `npm run deploy` | Build and deploy to Netlify |
+| `npm run test` | Run tests in watch mode |
+| `npm run lint` | Lint the codebase |
+| `npm run format` | Format with Prettier |
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Here's how you can help:
@@ -203,6 +243,7 @@ Contributions are welcome! Here's how you can help:
 - Use TypeScript strictly
 - Prefer functional components with hooks
 - Use Tailwind for styling
+- Avoid unnecessary comments — write self-documenting code
 
 ---
 
@@ -223,7 +264,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## 🙏 Acknowledgments
 
 - [cubing.js](https://github.com/cubing/cubing.js) — WCA-compliant scramble generation
-- [gan-web-bluetooth](https://github.com/nicola-lissandrini/gan-web-bluetooth) — GAN cube connectivity
+- [gan-web-bluetooth](https://github.com/chribot/gan-web-bluetooth) — GAN + MoYu cube connectivity (chribot fork)
 - [MonkeyType](https://monkeytype.com) — UI/UX inspiration
 - The speedcubing community for endless motivation
 

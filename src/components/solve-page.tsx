@@ -77,11 +77,11 @@ export function SolvePage() {
       onBack={() => navigate(-1)}
       onRepeatScramble={() => {
         setScramble(solve.scramble)
-        navigate('/')
+        navigate('/app')
       }}
       onDeleteSolve={localSolve ? async (id) => {
         await deleteSolve(id)
-        navigate('/')
+        navigate('/app')
       } : undefined}
       solve={solve}
       solveId={solveId}
