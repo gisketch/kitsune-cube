@@ -1,6 +1,6 @@
 # Smart Cube CFOP Analyzer - Documentation
 
-A modern Rubik's Cube timer application that connects to GAN Smart Cubes via Bluetooth, tracks solves in real-time, and automatically analyzes your CFOP method execution.
+A modern Rubik's Cube timer application that connects to Smart Cubes via Bluetooth, tracks solves in real-time, and automatically analyzes your CFOP method execution.
 
 ---
 
@@ -17,6 +17,7 @@ A modern Rubik's Cube timer application that connects to GAN Smart Cubes via Blu
 9. [Goals System](#goals-system)
 10. [Types](#types)
 11. [Data Flow Diagrams](#data-flow-diagrams)
+12. [Versioning & Releases](#versioning--releases)
 
 ---
 
@@ -91,13 +92,13 @@ The application uses React Router for URL-based navigation instead of state-base
 
 | Path | Component | Description |
 |------|-----------|-------------|
-| `/` | Timer View | Main timer view with scramble, cube, and solve session |
-| `/account` | AccountPage | User profile, CFOP stats widget, and solve history |
-| `/achievements` | AchievementsPage | Achievement gallery and progress tracking |
-| `/leaderboard` | LeaderboardPage | Global leaderboard rankings |
-| `/simulator` | Simulator | Interactive 3D cube simulator |
-| `/settings` | SettingsPanel | Application settings |
-| `/solve/:solveId` | SolvePage | Individual solve details with shareable URL |
+| `/app` | Timer View | Main timer view with scramble, cube, and solve session |
+| `/app/account` | AccountPage | User profile, CFOP stats widget, and solve history |
+| `/app/achievements` | AchievementsPage | Achievement gallery and progress tracking |
+| `/app/leaderboard` | LeaderboardPage | Global leaderboard rankings |
+| `/app/simulator` | Simulator | Interactive 3D cube simulator |
+| `/app/settings` | SettingsPanel | Application settings |
+| `/app/solve/:solveId` | SolvePage | Individual solve details with shareable URL |
 
 ### Navigation
 
@@ -105,12 +106,12 @@ Navigation is handled via `useNavigate()` hook. The sidebar and header use path 
 
 ```typescript
 const TAB_TO_PATH: Record<TabType, string> = {
-  timer: '/',
-  account: '/account',
-  achievements: '/achievements',
-  leaderboard: '/leaderboard',
-  simulator: '/simulator',
-  settings: '/settings'
+  timer: '/app',
+  account: '/app/account',
+  achievements: '/app/achievements',
+  leaderboard: '/app/leaderboard',
+  simulator: '/app/simulator',
+  settings: '/app/settings'
 }
 ```
 
@@ -142,14 +143,14 @@ The central hub that coordinates all hooks and manages the solve lifecycle. Uses
 
 ## Hooks Reference
 
-### useGanCube.ts
-**Location:** `src/hooks/useGanCube.ts`
+### useSmartCube.ts
+**Location:** `src/hooks/useSmartCube.ts`
 
-Manages Bluetooth connection to GAN Smart Cubes.
+Manages Bluetooth connection to Smart Cubes (supports GAN and potentially others via protocol adapters).
 
 ```typescript
 const {
-  connect,           // Initiate Bluetooth connection
+  connect,           // Initiate Bluetooth connection (with optional brand)
   disconnect,        // Close connection
   isConnected,       // Connection state
   isConnecting,      // Connecting in progress
@@ -157,7 +158,9 @@ const {
   resetGyro,         // Reset gyroscope to current orientation
   batteryLevel,      // Current battery percentage
   error,             // Connection error message
-} = useGanCube(onMove)
+  brand,             // Current selected cube brand
+  setBrand,          // Set the brand to connect to
+} = useSmartCube({ onMove, savedMacAddress, onMacAddressResolved })
 ```
 
 **Event Handling:**
@@ -417,6 +420,18 @@ function isSameFace(a: ParsedMove, b: ParsedMove): boolean
 
 ---
 
+### seo.ts
+**Location:** `src/lib/seo.ts`
+
+SEO helper component to manage document head tags (title, meta descriptions) dynamically based on the current route.
+
+### session-stats.ts
+**Location:** `src/lib/session-stats.ts`
+
+Utilities for calculating session-specific statistics, distinct from global solve statistics.
+
+---
+
 ## Components
 
 ### Layout Components
@@ -426,6 +441,7 @@ function isSameFace(a: ParsedMove, b: ParsedMove): boolean
 | `Header` | `src/components/layout/Header.tsx` | Navigation tabs, branding |
 | `Footer` | `src/components/layout/Footer.tsx` | App footer |
 | `StatusBar` | `src/components/layout/StatusBar.tsx` | Connection status, battery |
+| `Sidebar` | `src/components/layout/Sidebar.tsx` | App sidebar navigation |
 
 ### Core Components
 
@@ -450,6 +466,7 @@ function isSameFace(a: ParsedMove, b: ParsedMove): boolean
 | `Simulator` | `src/components/simulator.tsx` | CFOP algorithm simulator |
 | `SettingsPanel` | `src/components/settings-panel.tsx` | Theme and animation settings |
 | `SolvePage` | `src/components/solve-page.tsx` | Individual solve view accessed via URL |
+| `FAQPage` | `src/components/faq-page.tsx` | Frequently Asked Questions |
 
 ### Modal Components
 
@@ -459,6 +476,8 @@ function isSameFace(a: ParsedMove, b: ParsedMove): boolean
 | `CalibrationModal` | `src/components/calibration-modal.tsx` | Cube sync and gyro calibration |
 | `CubeInfoModal` | `src/components/cube-info-modal.tsx` | Connected cube information |
 | `CommandPalette` | `src/components/command-palette.tsx` | Ctrl+K command search |
+| `BrandPickerModal` | `src/components/brand-picker-modal.tsx` | Smart cube brand selection |
+| `AuthModal` | `src/components/auth-modal.tsx` | User authentication |
 
 ---
 
@@ -714,69 +733,92 @@ src/
 │
 ├── components/
 │   ├── cube/
-│   │   ├── index.tsx          # CubeViewer (Canvas wrapper)
-│   │   └── RubiksCube.tsx     # Three.js cube mesh
+│   │   ├── index.tsx           # CubeViewer (Canvas wrapper)
+│   │   └── RubiksCube.tsx      # Three.js cube mesh
 │   ├── layout/
 │   │   ├── Header.tsx
 │   │   ├── Footer.tsx
 │   │   └── StatusBar.tsx
-│   ├── ui/                    # Reusable UI components
+│   ├── ui/                     # Reusable UI components
 │   │   ├── button.tsx
 │   │   ├── card.tsx
-│   │   ├── tooltip.tsx
 │   │   └── ...
 │   ├── account-page.tsx
 │   ├── achievements-page.tsx
-│   ├── cfop-analysis.tsx
+│   ├── auth-modal.tsx          # Authentication dialog
+│   ├── brand-picker-modal.tsx  # Smart cube brand selection
 │   ├── calibration-modal.tsx
+│   ├── cfop-analysis.tsx
+│   ├── changelog-modal.tsx
+│   ├── command-palette.tsx
 │   ├── connection-modal.tsx
+│   ├── cube-info-modal.tsx
+│   ├── debug-config-panel.tsx
+│   ├── faq-page.tsx
+│   ├── gradient-orbs.tsx
+│   ├── keyboard-hints.tsx
+│   ├── leaderboard-page.tsx
+│   ├── profile-menu.tsx
+│   ├── recent-solves.tsx
+│   ├── scramble-display.tsx
 │   ├── scramble-notation.tsx
+│   ├── scramble-widget.tsx
 │   ├── set-goals-modal.tsx
 │   ├── settings-panel.tsx
 │   ├── simulator.tsx
+│   ├── solve-chart.tsx
 │   ├── solve-page.tsx
 │   ├── solve-results.tsx
-│   ├── timer-display.tsx
-│   └── ...
+│   ├── solves-list.tsx
+│   ├── solves-list-sidebar.tsx
+│   ├── stats-widget.tsx
+│   ├── theme-provider.tsx
+│   └── timer-display.tsx
 │
 ├── hooks/
-│   ├── useGanCube.ts          # Bluetooth smart cube connection
-│   ├── useTimer.ts            # Solve timer
-│   ├── useManualTimer.ts      # Spacebar timer for non-smart cube
-│   ├── useScrambleTracker.ts  # Scramble execution tracking
-│   ├── useCubeState.ts        # KPuzzle-based cube state
-│   ├── useCubeFaces.ts        # Face-array cube state
-│   ├── useGyroRecorder.ts     # Gyro/move recording
-│   ├── useSolves.ts           # Solve history management
-│   ├── useSettings.ts         # App settings
+│   ├── useCubeFaces.ts         # Face-array cube state
+│   ├── useCubeState.ts         # KPuzzle-based cube state
+│   ├── useGyroRecorder.ts      # Gyro/move recording
+│   ├── useKeyboardShortcuts.ts # Keyboard interaction handler
+│   ├── useManualTimer.ts       # Spacebar timer
+│   ├── useScrambleTracker.ts   # Scramble execution tracking
+│   ├── useSettings.ts          # App settings
+│   ├── useSmartCube.ts         # Smart cube connection (unified)
+│   ├── useSolves.ts            # Solve history management
+│   ├── useTimer.ts             # Solve timer
 │   └── useCalibrationSequence.ts
 │
 ├── lib/
-│   ├── cfop-analyzer.ts       # CFOP phase detection algorithm
-│   ├── cube-faces.ts          # Face-based cube operations
-│   ├── cube-state.ts          # cubing library integration
-│   ├── move-utils.ts          # Move parsing utilities
-│   ├── solve-stats.ts         # Statistics calculations
-│   ├── themes.ts              # Theme definitions
-│   ├── firebase.ts            # Firebase configuration
-│   ├── format.ts              # Time/date formatting
-│   └── constants.ts           # Shared constants
+│   ├── cfop-analyzer.ts        # CFOP phase detection algorithm
+│   ├── cube-faces.ts           # Face-based cube operations
+│   ├── cube-protocols/         # Bluetooth protocols for different brands
+│   ├── cube-state.ts           # cubing library integration
+│   ├── move-utils.ts           # Move parsing utilities
+│   ├── solve-stats.ts          # Statistics calculations
+│   ├── themes.ts               # Theme definitions
+│   ├── firebase.ts             # Firebase configuration
+│   ├── format.ts               # Time/date formatting
+│   ├── constants.ts            # Shared constants
+│   ├── seo.ts                  # SEO helpers
+│   └── session-stats.ts        # Session statistics
 │
 ├── contexts/
-│   ├── SolveSessionContext.tsx
-│   ├── AuthContext.tsx
-│   ├── ExperienceContext.tsx
 │   ├── AchievementsContext.tsx
-│   └── GoalsContext.tsx
+│   ├── AuthContext.tsx
+│   ├── ChangelogContext.tsx
+│   ├── ExperienceContext.tsx
+│   ├── GoalsContext.tsx
+│   ├── NotificationContext.tsx
+│   ├── SolveSessionContext.tsx
+│   └── ToastContext.tsx
 │
 ├── types/
-│   ├── index.ts               # Central type definitions
+│   ├── index.ts                # Central type definitions
 │   ├── achievements.ts
-│   └── goals.ts               # Goals and presets types
-│   └── achievements.ts
+│   └── goals.ts
 │
 └── config/
-    └── scene-config.ts        # 3D scene configuration
+    └── scene-config.ts         # 3D scene configuration
 ```
 
 ---
@@ -785,7 +827,8 @@ src/
 
 | Package | Purpose |
 |---------|---------|
-| `gan-web-bluetooth` | GAN Smart Cube Bluetooth protocol |
+| `gan-web-bluetooth` | GAN + MoYu Smart Cube Bluetooth protocol (chribot fork) |
+| `btcube-web` | QiYi and GiiKER cube protocols |
 | `cubing` | Cube state, scramble generation, algorithms |
 | `three` | 3D rendering engine |
 | `@react-three/fiber` | React renderer for Three.js |
@@ -793,6 +836,94 @@ src/
 | `firebase` | Authentication and cloud storage |
 | `framer-motion` | Animations |
 | `tailwindcss` | Styling |
+
+---
+
+## Versioning & Releases
+
+### Version Format
+
+We use **Semantic Versioning** with `0.MINOR.PATCH` format during beta:
+
+- `0.MINOR.0` — New features, significant changes
+- `0.MINOR.PATCH` — Bug fixes, small improvements
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `package.json` | Source of truth for version number |
+| `src/lib/version.json` | Generated file with version + git info |
+| `src/lib/changelog.ts` | User-facing changelog entries |
+| `scripts/release.ts` | Release automation script |
+| `scripts/generate-version.ts` | Generates version.json from package.json |
+
+### Release Workflow
+
+```
+1. Update src/lib/changelog.ts with NEW version
+   ↓
+2. Run: npm run release:minor (or release:patch)
+   ↓
+3. Script validates changelog matches new version
+   ↓
+4. Bumps package.json, generates version.json
+   ↓
+5. Commits, creates git tag, pushes
+   ↓
+6. Optionally deploys to Netlify
+```
+
+### Changelog Structure
+
+The changelog in `src/lib/changelog.ts` drives the in-app "What's New" modal:
+
+```typescript
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '0.2.0',                    // Must match release version
+    date: '2026-01-06',                  // Release date
+    title: 'Feature Title 🎉',           // Featured announcement title
+    description: 'Optional description', // Featured card description
+    icon: 'rocket',                      // rocket | sparkles | gift | zap
+    changes: [
+      { type: 'feature', text: 'New feature description' },
+      { type: 'fix', text: 'Bug fix description' },
+      { type: 'improvement', text: 'Improvement description' },
+      { type: 'breaking', text: 'Breaking change description' },
+    ],
+  },
+]
+```
+
+### NPM Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run release:minor` | Release with new features |
+| `npm run release:patch` | Release with bug fixes |
+| `npm run deploy` | Build and deploy to Netlify |
+| `npm run test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+| `npm run lint` | Lint the codebase |
+| `npm run format` | Format with Prettier |
+
+### Version Display
+
+The app displays version info from `src/lib/version.json`:
+
+```typescript
+interface VersionInfo {
+  version: string      // e.g., "0.1.0"
+  commitHash: string   // e.g., "abc1234"
+  commitDate: string   // e.g., "2026-01-05"
+  branch: string       // e.g., "main"
+  buildDate: string    // e.g., "2026-01-05"
+  stage: string        // "beta"
+}
+```
 
 ---
 

@@ -2,12 +2,9 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Rocket, Sparkles, Gift, Zap, Plus, Wrench, TrendingUp, AlertTriangle } from 'lucide-react'
 import { useChangelog } from '@/contexts/ChangelogContext'
-import {
-  FEATURED_ANNOUNCEMENT,
-  CHANGELOG_ENTRIES,
-  type ChangeType,
-  type FeaturedAnnouncement,
-} from '@/lib/changelog'
+import { CHANGELOG, getFeaturedAnnouncement, type ChangeType } from '@/lib/changelog'
+
+type FeaturedAnnouncement = NonNullable<ReturnType<typeof getFeaturedAnnouncement>>
 
 const ICON_MAP = {
   rocket: Rocket,
@@ -130,7 +127,9 @@ export function ChangelogModal() {
 
             <div className="flex-1 overflow-y-auto p-6">
               <div className="flex flex-col gap-6">
-                {FEATURED_ANNOUNCEMENT && <FeaturedCard announcement={FEATURED_ANNOUNCEMENT} />}
+                {getFeaturedAnnouncement() && (
+                  <FeaturedCard announcement={getFeaturedAnnouncement()!} />
+                )}
 
                 <div>
                   <h3
@@ -140,7 +139,7 @@ export function ChangelogModal() {
                     Changelog
                   </h3>
                   <div className="flex flex-col gap-4">
-                    {CHANGELOG_ENTRIES.map((entry, index) => (
+                    {CHANGELOG.map((entry, index) => (
                       <motion.div
                         key={entry.version}
                         initial={{ opacity: 0, x: -10 }}
