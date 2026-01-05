@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  calculatePhaseTimings,
-  type PhaseTiming,
-  type CFOPTimingAnalysis,
-} from './cfop-timing'
+import { calculatePhaseTimings } from './cfop-timing'
 import type { CFOPAnalysis } from './cfop-analyzer'
 import type { MoveFrame } from '@/types'
 
