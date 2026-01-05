@@ -1,6 +1,6 @@
 # Smart Cube CFOP Analyzer - Documentation
 
-A modern Rubik's Cube timer application that connects to GAN Smart Cubes via Bluetooth, tracks solves in real-time, and automatically analyzes your CFOP method execution.
+A modern Rubik's Cube timer application that connects to Smart Cubes via Bluetooth, tracks solves in real-time, and automatically analyzes your CFOP method execution.
 
 ---
 
@@ -17,6 +17,7 @@ A modern Rubik's Cube timer application that connects to GAN Smart Cubes via Blu
 9. [Goals System](#goals-system)
 10. [Types](#types)
 11. [Data Flow Diagrams](#data-flow-diagrams)
+12. [Versioning & Releases](#versioning--releases)
 
 ---
 
@@ -826,7 +827,8 @@ src/
 
 | Package | Purpose |
 |---------|---------|
-| `gan-web-bluetooth` | GAN Smart Cube Bluetooth protocol |
+| `gan-web-bluetooth` | GAN + MoYu Smart Cube Bluetooth protocol (chribot fork) |
+| `btcube-web` | QiYi and GiiKER cube protocols |
 | `cubing` | Cube state, scramble generation, algorithms |
 | `three` | 3D rendering engine |
 | `@react-three/fiber` | React renderer for Three.js |
@@ -834,6 +836,94 @@ src/
 | `firebase` | Authentication and cloud storage |
 | `framer-motion` | Animations |
 | `tailwindcss` | Styling |
+
+---
+
+## Versioning & Releases
+
+### Version Format
+
+We use **Semantic Versioning** with `0.MINOR.PATCH` format during beta:
+
+- `0.MINOR.0` — New features, significant changes
+- `0.MINOR.PATCH` — Bug fixes, small improvements
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `package.json` | Source of truth for version number |
+| `src/lib/version.json` | Generated file with version + git info |
+| `src/lib/changelog.ts` | User-facing changelog entries |
+| `scripts/release.ts` | Release automation script |
+| `scripts/generate-version.ts` | Generates version.json from package.json |
+
+### Release Workflow
+
+```
+1. Update src/lib/changelog.ts with NEW version
+   ↓
+2. Run: npm run release:minor (or release:patch)
+   ↓
+3. Script validates changelog matches new version
+   ↓
+4. Bumps package.json, generates version.json
+   ↓
+5. Commits, creates git tag, pushes
+   ↓
+6. Optionally deploys to Netlify
+```
+
+### Changelog Structure
+
+The changelog in `src/lib/changelog.ts` drives the in-app "What's New" modal:
+
+```typescript
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '0.2.0',                    // Must match release version
+    date: '2026-01-06',                  // Release date
+    title: 'Feature Title 🎉',           // Featured announcement title
+    description: 'Optional description', // Featured card description
+    icon: 'rocket',                      // rocket | sparkles | gift | zap
+    changes: [
+      { type: 'feature', text: 'New feature description' },
+      { type: 'fix', text: 'Bug fix description' },
+      { type: 'improvement', text: 'Improvement description' },
+      { type: 'breaking', text: 'Breaking change description' },
+    ],
+  },
+]
+```
+
+### NPM Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run release:minor` | Release with new features |
+| `npm run release:patch` | Release with bug fixes |
+| `npm run deploy` | Build and deploy to Netlify |
+| `npm run test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+| `npm run lint` | Lint the codebase |
+| `npm run format` | Format with Prettier |
+
+### Version Display
+
+The app displays version info from `src/lib/version.json`:
+
+```typescript
+interface VersionInfo {
+  version: string      // e.g., "0.1.0"
+  commitHash: string   // e.g., "abc1234"
+  commitDate: string   // e.g., "2026-01-05"
+  branch: string       // e.g., "main"
+  buildDate: string    // e.g., "2026-01-05"
+  stage: string        // "beta"
+}
+```
 
 ---
 
