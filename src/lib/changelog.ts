@@ -16,6 +16,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.1',
+    date: '2026-01-05',
+    title: 'Improved Release Workflow',
+    icon: 'zap',
+    changes: [
+      { type: 'improvement', text: 'New semantic versioning system with release scripts' },
+      { type: 'improvement', text: 'Changelog validation before releases' },
+      { type: 'improvement', text: 'Streamlined deploy workflow with Netlify integration' },
+    ],
+  },
+  {
     version: '0.1.0',
     date: '2026-01-05',
     title: 'First Beta Release! 🦊',
