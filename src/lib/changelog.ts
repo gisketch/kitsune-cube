@@ -3,6 +3,7 @@ export type ChangeType = 'feature' | 'fix' | 'improvement' | 'breaking'
 export interface ChangelogChange {
   type: ChangeType
   text: string
+  contributor?: string
 }
 
 export interface ChangelogEntry {
@@ -15,6 +16,18 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '0.1.2',
+    date: '2026-01-06',
+    title: 'Community Bug Fixes 🐛',
+    icon: 'gift',
+    changes: [
+      { type: 'fix', text: 'Scramble notation overflow on smaller screens', contributor: 'DeathAlchemy' },
+      { type: 'fix', text: 'Repeat scramble button routing to website instead of app', contributor: 'DeathAlchemy' },
+      { type: 'fix', text: 'Streak Starter achievement not unlocking properly', contributor: 'DeathAlchemy' },
+      { type: 'fix', text: 'GitHub repository links pointing to wrong URLs', contributor: 'bellalMohamed' },
+    ],
+  },
   {
     version: '0.1.1',
     date: '2026-01-05',

@@ -168,13 +168,43 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
                         GitHub <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-                        DeathAlchemy
-                      </span>
-                      <p className="text-xs" style={{ color: 'var(--theme-sub)' }}>
-                        Suggestions and bug reports
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                          DeathAlchemy
+                        </span>
+                        <p className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+                          Bug reports and testing
+                        </p>
+                      </div>
+                      <a
+                        href="https://github.com/Aurous"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs transition-colors hover:opacity-80"
+                        style={{ color: 'var(--theme-accent)' }}
+                      >
+                        GitHub <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                          bellalMohamed
+                        </span>
+                        <p className="text-xs" style={{ color: 'var(--theme-sub)' }}>
+                          Bug reports and testing
+                        </p>
+                      </div>
+                      <a
+                        href="https://github.com/bellalMohamed"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs transition-colors hover:opacity-80"
+                        style={{ color: 'var(--theme-accent)' }}
+                      >
+                        GitHub <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   </div>
                 </section>
