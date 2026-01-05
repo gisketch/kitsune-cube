@@ -1,12 +1,14 @@
 {
   "name": "cube",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "npx tsx scripts/generate-version.ts && vite",
     "build": "npx tsx scripts/generate-version.ts && tsc -b && vite build",
-    "version": "npx tsx scripts/generate-version.ts",
+    "release:minor": "npx tsx scripts/release.ts minor",
+    "release:patch": "npx tsx scripts/release.ts patch",
+    "deploy": "npm run build && npx netlify deploy --prod --dir=dist",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
