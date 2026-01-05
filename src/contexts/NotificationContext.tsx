@@ -11,10 +11,12 @@ interface Notification {
   title: string
   subtitle?: string
   tier?: AchievementTier
+  progress?: number
+  target?: number
 }
 
 interface NotificationContextType {
-  showAchievement: (achievementId: string, tier: AchievementTier) => void
+  showAchievement: (achievementId: string, tier: AchievementTier, progress?: number) => void
   showPersonalBest: (time: number, previousBest?: number) => void
   triggerTestAchievement: () => void
   triggerTestPersonalBest: () => void
@@ -105,9 +107,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.filter(n => n.id !== id))
   }, [])
 
-  const showAchievement = useCallback((achievementId: string, tier: AchievementTier) => {
+  const showAchievement = useCallback((achievementId: string, tier: AchievementTier, progress?: number) => {
     const achievement = ACHIEVEMENTS.find(a => a.id === achievementId)
     if (!achievement) return
+
+    const tierConfig = achievement.tiers.find(t => t.tier === tier)
+    const target = tierConfig?.requirement
 
     const id = crypto.randomUUID()
     setNotifications(prev => [...prev, {
@@ -116,6 +121,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       title: achievement.name,
       subtitle: achievement.description,
       tier,
+      progress,
+      target,
     }])
 
     fireConfetti('achievement')
@@ -143,7 +150,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const randomAchievement = ACHIEVEMENTS[Math.floor(Math.random() * ACHIEVEMENTS.length)]
     const tiers: AchievementTier[] = ['bronze', 'silver', 'gold', 'diamond', 'obsidian']
     const randomTier = tiers[Math.floor(Math.random() * tiers.length)]
-    showAchievement(randomAchievement.id, randomTier)
+    const tierConfig = randomAchievement.tiers.find(t => t.tier === randomTier)
+    const target = tierConfig?.requirement ?? 100
+    const randomProgress = Math.floor(target * (0.5 + Math.random() * 0.5))
+    showAchievement(randomAchievement.id, randomTier, randomProgress)
   }, [showAchievement])
 
   const triggerTestPersonalBest = useCallback(() => {
@@ -211,6 +221,14 @@ function AchievementNotification({
 }) {
   const tier = notification.tier || 'bronze'
   const colors = tierColors[tier]
+  const hasProgress = notification.progress !== undefined && notification.target !== undefined
+  const progressPercent = hasProgress ? Math.min((notification.progress! / notification.target!) * 100, 100) : 0
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+    return num.toLocaleString()
+  }
 
   return (
     <div
@@ -221,17 +239,34 @@ function AchievementNotification({
         <Trophy className={`w-4 h-4 sm:w-6 sm:h-6 ${colors.text}`} />
       </div>
       
-      <div className="flex flex-col min-w-0 flex-1">
+      <div className="flex flex-col min-w-0 flex-1 gap-1">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Sparkles className={`w-3 h-3 sm:w-4 sm:h-4 ${colors.text}`} />
           <span className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider ${colors.text}`}>
             Achievement Unlocked
           </span>
         </div>
-        <span className="text-sm sm:text-lg font-bold text-white mt-0.5 truncate">
+        <span className="text-sm sm:text-lg font-bold text-white truncate">
           {notification.title}
         </span>
-        {notification.subtitle && (
+        {hasProgress && (
+          <div className="flex flex-col gap-1 mt-0.5">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs text-white/70">
+              <span>{formatNumber(notification.progress!)}</span>
+              <span>{formatNumber(notification.target!)}</span>
+            </div>
+            <div className="h-1.5 sm:h-2 w-full rounded-full bg-black/30 overflow-hidden">
+              <motion.div 
+                className="h-full rounded-full"
+                style={{ backgroundColor: 'currentColor' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+        )}
+        {!hasProgress && notification.subtitle && (
           <span className="text-xs sm:text-sm text-white/70 truncate">
             {notification.subtitle}
           </span>

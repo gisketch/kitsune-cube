@@ -593,18 +593,22 @@ function HorizontalBar({
   )
 }
 
+interface F2LSlotData {
+  moves: number
+  duration: number
+  recognitionTime: number
+  executionTime: number
+}
+
 function MobileCFOPBreakdown({
   crossMoves,
-  f2lMoves,
+  f2lSlots,
   ollMoves,
   pllMoves,
   crossDuration,
-  f2lDuration,
   ollDuration,
   pllDuration,
   crossExecution,
-  f2lRecognition,
-  f2lExecution,
   ollRecognition,
   ollExecution,
   pllRecognition,
@@ -614,16 +618,13 @@ function MobileCFOPBreakdown({
   goals,
 }: {
   crossMoves: number
-  f2lMoves: number
+  f2lSlots: F2LSlotData[]
   ollMoves: number
   pllMoves: number
   crossDuration: number
-  f2lDuration: number
   ollDuration: number
   pllDuration: number
   crossExecution: number
-  f2lRecognition: number
-  f2lExecution: number
   ollRecognition: number
   ollExecution: number
   pllRecognition: number
@@ -632,12 +633,22 @@ function MobileCFOPBreakdown({
   onDisplayModeChange: (mode: DisplayMode) => void
   goals?: { cross?: PhaseGoal; f2l?: PhaseGoal; oll?: PhaseGoal; pll?: PhaseGoal }
 }) {
-  const maxMoves = Math.max(crossMoves, f2lMoves, ollMoves, pllMoves, 1)
-  const maxDuration = Math.max(crossDuration, f2lDuration, ollDuration, pllDuration, 1)
+  const f2lGoalPerSlot = goals?.f2l ? {
+    moves: Math.ceil(goals.f2l.moves / 4),
+    time: goals.f2l.time / 4,
+  } : undefined
+
+  const allMoves = [crossMoves, ...f2lSlots.map(s => s.moves), ollMoves, pllMoves]
+  const allDurations = [crossDuration, ...f2lSlots.map(s => s.duration), ollDuration, pllDuration]
+  const maxMoves = Math.max(...allMoves, 1)
+  const maxDuration = Math.max(...allDurations, 1)
 
   const phases = [
     { label: 'Cross', moves: crossMoves, recognitionTime: 0, executionTime: crossExecution, colorVar: '--theme-phaseCross', duration: crossDuration, goal: goals?.cross, hideRecognition: true },
-    { label: 'F2L', moves: f2lMoves, recognitionTime: f2lRecognition, executionTime: f2lExecution, colorVar: '--theme-phaseF2L1', duration: f2lDuration, goal: goals?.f2l, hideRecognition: false },
+    { label: 'F2L 1', moves: f2lSlots[0]?.moves ?? 0, recognitionTime: f2lSlots[0]?.recognitionTime ?? 0, executionTime: f2lSlots[0]?.executionTime ?? 0, colorVar: '--theme-phaseF2L1', duration: f2lSlots[0]?.duration ?? 0, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 2', moves: f2lSlots[1]?.moves ?? 0, recognitionTime: f2lSlots[1]?.recognitionTime ?? 0, executionTime: f2lSlots[1]?.executionTime ?? 0, colorVar: '--theme-phaseF2L2', duration: f2lSlots[1]?.duration ?? 0, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 3', moves: f2lSlots[2]?.moves ?? 0, recognitionTime: f2lSlots[2]?.recognitionTime ?? 0, executionTime: f2lSlots[2]?.executionTime ?? 0, colorVar: '--theme-phaseF2L3', duration: f2lSlots[2]?.duration ?? 0, goal: f2lGoalPerSlot, hideRecognition: false },
+    { label: 'F2L 4', moves: f2lSlots[3]?.moves ?? 0, recognitionTime: f2lSlots[3]?.recognitionTime ?? 0, executionTime: f2lSlots[3]?.executionTime ?? 0, colorVar: '--theme-phaseF2L4', duration: f2lSlots[3]?.duration ?? 0, goal: f2lGoalPerSlot, hideRecognition: false },
     { label: 'OLL', moves: ollMoves, recognitionTime: ollRecognition, executionTime: ollExecution, colorVar: '--theme-phaseOLL', duration: ollDuration, goal: goals?.oll, hideRecognition: false },
     { label: 'PLL', moves: pllMoves, recognitionTime: pllRecognition, executionTime: pllExecution, colorVar: '--theme-phasePLL', duration: pllDuration, goal: goals?.pll, hideRecognition: false },
   ]
@@ -1709,16 +1720,18 @@ export function SolveResults({
           {!isManual && !solve?.isManual && (
           <MobileCFOPBreakdown
             crossMoves={crossMoves}
-            f2lMoves={f2lMoves}
+            f2lSlots={[
+              { moves: f2l1Moves, duration: f2l1Duration, recognitionTime: phaseTimings?.f2l[0]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[0]?.executionTime ?? f2l1Duration },
+              { moves: f2l2Moves, duration: f2l2Duration, recognitionTime: phaseTimings?.f2l[1]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[1]?.executionTime ?? f2l2Duration },
+              { moves: f2l3Moves, duration: f2l3Duration, recognitionTime: phaseTimings?.f2l[2]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[2]?.executionTime ?? f2l3Duration },
+              { moves: f2l4Moves, duration: f2l4Duration, recognitionTime: phaseTimings?.f2l[3]?.recognitionTime ?? 0, executionTime: phaseTimings?.f2l[3]?.executionTime ?? f2l4Duration },
+            ]}
             ollMoves={ollMoves}
             pllMoves={pllMoves}
             crossDuration={crossDuration}
-            f2lDuration={f2lDuration}
             ollDuration={ollDuration}
             pllDuration={pllDuration}
             crossExecution={phaseTimings?.cross.executionTime ?? crossDuration}
-            f2lRecognition={phaseTimings?.aggregated.f2l.recognitionTime ?? 0}
-            f2lExecution={phaseTimings?.aggregated.f2l.executionTime ?? f2lDuration}
             ollRecognition={phaseTimings?.oll.recognitionTime ?? 0}
             ollExecution={phaseTimings?.oll.executionTime ?? ollDuration}
             pllRecognition={phaseTimings?.pll.recognitionTime ?? 0}

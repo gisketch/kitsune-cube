@@ -266,7 +266,7 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
 
         checkAndUpdateAchievements(statsUpdate).then(unlocks => {
           unlocks.forEach(unlock => {
-            showAchievement(unlock.achievementId, unlock.tier)
+            showAchievement(unlock.achievementId, unlock.tier, unlock.progress)
           })
         })
       }

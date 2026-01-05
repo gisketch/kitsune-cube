@@ -16,6 +16,7 @@ interface AchievementUnlock {
   achievementId: string
   tier: AchievementTier
   xpAwarded: number
+  progress: number
 }
 
 interface AchievementsContextType {
@@ -216,6 +217,7 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
               achievementId: achievement.id,
               tier: tierConfig.tier,
               xpAwarded: tierConfig.xpReward,
+              progress: statValue,
             })
           }
         }
