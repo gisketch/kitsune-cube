@@ -12,7 +12,7 @@ const SOCIAL_LINKS = [
   {
     name: 'GitHub',
     icon: Github,
-    href: 'https://github.com/kitsunecube',
+    href: 'https://github.com/gisketch/kitsune-cube',
     description: 'Star the project',
     color: '#ffffff',
   },
