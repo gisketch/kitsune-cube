@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight,
   RotateCcw,
-  BarChart3,
+  Copy,
   Play,
   Pause,
   ArrowLeft,
@@ -20,7 +20,9 @@ import { DEFAULT_CONFIG } from '@/config/scene-config'
 import { createSolvedCube, applyMove, cubeFacesToFacelets, COLOR_HEX } from '@/lib/cube-faces'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal'
+import { CopyModal } from '@/components/copy-modal'
 import { formatTime, formatDuration } from '@/lib/format'
+import { consolidateMoves, countConsolidatedMoves } from '@/lib/move-utils'
 import { useGoals } from '@/contexts/GoalsContext'
 import { useToast } from '@/contexts/ToastContext'
 import { calculatePhaseTimings, type CFOPTimingAnalysis } from '@/lib/cfop-timing'
@@ -55,7 +57,6 @@ interface SolveResultsProps {
   analysis: CFOPAnalysis | null
   onNextScramble?: () => void
   onRepeatScramble?: () => void
-  onViewStats?: () => void
   onWatchReplay?: () => void
   onBack?: () => void
   onDeleteSolve?: (id: string) => void
@@ -69,6 +70,7 @@ interface SolveResultsProps {
   isManual?: boolean
   solveId?: string
   isOwner?: boolean
+  userId?: string
 }
 
 interface PhaseMarker {
@@ -737,7 +739,6 @@ export function SolveResults({
   analysis,
   onNextScramble,
   onRepeatScramble,
-  onViewStats,
   onWatchReplay,
   onBack,
   onDeleteSolve,
@@ -747,6 +748,7 @@ export function SolveResults({
   isManual,
   solveId,
   isOwner = true,
+  userId,
 }: SolveResultsProps) {
   const [isReplayMode, setIsReplayMode] = useState(false)
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1)
@@ -758,6 +760,7 @@ export function SolveResults({
     return (saved === 'moves' || saved === 'time') ? saved : 'moves'
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showCopyModal, setShowCopyModal] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('solve-results-display-mode', displayMode)
@@ -773,14 +776,45 @@ export function SolveResults({
     const id = solveId || solve?.id
     if (!id) return
     
-    const url = `${window.location.origin}/solve/${id}`
+    const url = userId 
+      ? `${window.location.origin}/solve/${userId}/${id}`
+      : `${window.location.origin}/solve/${id}`
     try {
       await navigator.clipboard.writeText(url)
       showToast('Link copied to clipboard!')
     } catch {
       showToast('Failed to copy link', 'error')
     }
-  }, [solveId, solve?.id, showToast])
+  }, [solveId, solve?.id, userId, showToast])
+
+  const handleCopySolution = useCallback(async () => {
+    const solution = solve?.solution || []
+    if (solution.length === 0) {
+      showToast('No solution to copy', 'error')
+      return
+    }
+    try {
+      const consolidated = consolidateMoves(solution)
+      await navigator.clipboard.writeText(consolidated.join(' '))
+      showToast('Solution copied to clipboard!')
+    } catch {
+      showToast('Failed to copy solution', 'error')
+    }
+  }, [solve?.solution, showToast])
+
+  const handleCopyScramble = useCallback(async () => {
+    const scrambleText = scramble || solve?.scramble
+    if (!scrambleText) {
+      showToast('No scramble to copy', 'error')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(scrambleText)
+      showToast('Scramble copied to clipboard!')
+    } catch {
+      showToast('Failed to copy scramble', 'error')
+    }
+  }, [scramble, solve?.scramble, showToast])
 
   const hasGyroData = Boolean(solve?.gyroData && solve.gyroData.length > 0)
   const hasMoveTimings = Boolean(solve?.moveTimings && solve.moveTimings.length > 0)
@@ -1256,9 +1290,15 @@ export function SolveResults({
   const canReplay =
     solve && (solve.gyroData?.length || solve.moveTimings?.length || solve.solution?.length)
 
+  const consolidatedMoveCount = useMemo(() => {
+    const solution = solve?.solution || []
+    return countConsolidatedMoves(solution)
+  }, [solve?.solution])
+
   const displayTime = isReplayMode ? Math.max(0, currentElapsedTime - timeOffset) : time
-  const currentMoveCount = isReplayMode ? Math.max(0, currentMoveIndex + 1) : moves
-  const displayTps = displayTime > 0 ? (currentMoveCount / (displayTime / 1000)).toFixed(2) : '0.00'
+  const rawMoveCount = isReplayMode ? Math.max(0, currentMoveIndex + 1) : moves
+  const displayMoveCount = isReplayMode ? rawMoveCount : consolidatedMoveCount
+  const displayTps = displayTime > 0 ? (rawMoveCount / (displayTime / 1000)).toFixed(2) : '0.00'
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -1468,16 +1508,16 @@ export function SolveResults({
                 className="flex w-full max-w-4xl flex-col gap-6"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 md:gap-3">
                     {currentPhase && (
                       <span
-                        className="rounded-full px-3 py-1 text-sm font-medium text-white"
+                        className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white md:px-3 md:py-1 md:text-sm"
                         style={{ backgroundColor: currentPhase.color }}
                       >
                         {currentPhase.name}
                       </span>
                     )}
-                    <span className="text-sm" style={{ color: 'var(--theme-sub)' }}>
+                    <span className="text-[10px] md:text-sm" style={{ color: 'var(--theme-sub)' }}>
                       {currentMoveIndex < 0
                         ? 'Scrambled'
                         : currentMoveIndex >= totalMoves - 1
@@ -1486,7 +1526,7 @@ export function SolveResults({
                     </span>
                     {currentMoveIndex >= 0 && currentMoveIndex < totalMoves && (
                       <span
-                        className="font-mono text-lg font-bold"
+                        className="font-mono text-sm font-bold md:text-lg"
                         style={{ color: 'var(--theme-text)' }}
                       >
                         {allMoves[currentMoveIndex]}
@@ -1620,7 +1660,7 @@ export function SolveResults({
               >
                 {/* Mobile: horizontal layout */}
                 <div className="flex items-center justify-center gap-6 md:hidden">
-                  <StatCard label="moves" value={moves.toString()} />
+                  <StatCard label="moves" value={displayMoveCount.toString()} />
                   <StatCard label="tps" value={displayTps} />
                 </div>
                 <div className="flex items-center justify-center gap-4 md:hidden">
@@ -1669,7 +1709,7 @@ export function SolveResults({
 
                 {/* Desktop: centered single row with all stats */}
                 <div className="hidden md:flex md:items-center md:justify-center md:gap-8">
-                  <StatCard label="moves" value={moves.toString()} />
+                  <StatCard label="moves" value={displayMoveCount.toString()} />
                   <PhaseStatCard
                     label="cross"
                     moves={crossMoves}
@@ -1764,7 +1804,7 @@ export function SolveResults({
             )}
             {!isManual && !solve?.isManual && (
               <>
-                <ActionButton icon={BarChart3} onClick={onViewStats} label="Detailed Stats" />
+                <ActionButton icon={Copy} onClick={() => setShowCopyModal(true)} label="Copy" />
                 {canReplay ? (
                   <ActionButton
                     icon={isReplayMode ? Pause : Play}
@@ -1797,6 +1837,13 @@ export function SolveResults({
             onDeleteSolve(id)
           }
         }}
+      />
+
+      <CopyModal
+        isOpen={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        onCopySolution={handleCopySolution}
+        onCopyScramble={handleCopyScramble}
       />
     </TooltipProvider>
   )

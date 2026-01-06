@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { runDesyncCheck } from './debug-desync'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { Header } from '@/components/layout/Header'
@@ -74,7 +75,7 @@ const PATH_TO_TAB: Record<string, TabType> = {
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   const activeTab = useMemo(() => {
     const path = location.pathname
     if (path.startsWith('/app/solve/')) return 'account'
@@ -153,6 +154,10 @@ function App() {
     loadSavedMacAddress()
   }, [user])
 
+  useEffect(() => {
+    runDesyncCheck()
+  }, [])
+
   const handleMacAddressResolved = useCallback(async (mac: string) => {
     setSavedMacAddress(mac)
     if (user && db && !isOfflineMode) {
@@ -169,7 +174,7 @@ function App() {
     const remainingSolves = solves.filter(s => s.id !== id)
     await recalculateStats(remainingSolves)
   }, [rawDeleteSolve, solves, recalculateStats])
-  
+
   const [manualScramble, setManualScramble] = useState('')
 
   const cubeColorValues = useMemo(
@@ -274,9 +279,9 @@ function App() {
   ])
 
   const calibrationActionsRef = useRef<{ resetGyro: () => void; syncCube: () => void; nextScramble: () => void }>({
-    resetGyro: () => {},
-    syncCube: () => {},
-    nextScramble: () => {},
+    resetGyro: () => { },
+    syncCube: () => { },
+    nextScramble: () => { },
   })
 
   const checkCalibrationSequence = useCallback((move: string): 'gyro' | 'cube' | 'scramble' | null => {
@@ -613,11 +618,6 @@ function App() {
                           analysis={lastAnalysis}
                           onNextScramble={handleNewScramble}
                           onRepeatScramble={handleRepeatScramble}
-                          onViewStats={() => {
-                            if (solves.length > 0) {
-                              navigate(`/app/solve/${solves[0].id}`)
-                            }
-                          }}
                           onDeleteSolve={(id) => {
                             deleteSolve(id)
                             handleNewScramble()
@@ -625,6 +625,7 @@ function App() {
                           scramble={lastScramble}
                           solve={solves.length > 0 ? solves[0] : undefined}
                           isManual={manualTimerEnabled}
+                          userId={user?.uid}
                         />
                       ) : (
                         <>
@@ -701,11 +702,6 @@ function App() {
                         analysis={lastAnalysis}
                         onNextScramble={handleNewScramble}
                         onRepeatScramble={handleRepeatScramble}
-                        onViewStats={() => {
-                          if (solves.length > 0) {
-                            navigate(`/app/solve/${solves[0].id}`)
-                          }
-                        }}
                         onDeleteSolve={(id) => {
                           deleteSolve(id)
                           handleNewScramble()
@@ -713,6 +709,7 @@ function App() {
                         scramble={lastScramble}
                         solve={solves.length > 0 ? solves[0] : undefined}
                         isManual={manualTimerEnabled}
+                        userId={user?.uid}
                       />
                     ) : (
                       <>
@@ -788,11 +785,6 @@ function App() {
                       analysis={lastAnalysis}
                       onNextScramble={handleNewScramble}
                       onRepeatScramble={handleRepeatScramble}
-                      onViewStats={() => {
-                        if (solves.length > 0) {
-                          navigate(`/app/solve/${solves[0].id}`)
-                        }
-                      }}
                       onDeleteSolve={(id) => {
                         deleteSolve(id)
                         handleNewScramble()
@@ -800,6 +792,7 @@ function App() {
                       scramble={lastScramble}
                       solve={solves.length > 0 ? solves[0] : undefined}
                       isManual={manualTimerEnabled}
+                      userId={user?.uid}
                     />
                   ) : (
                     <>
@@ -853,7 +846,7 @@ function App() {
               <AccountPage
                 solves={solves}
                 onDeleteSolve={deleteSolve}
-                onViewSolveDetails={(solve) => navigate(`/app/solve/${solve.id}`)}
+                onViewSolveDetails={(solve) => navigate(user?.uid ? `/app/solve/${user.uid}/${solve.id}` : `/app/solve/${solve.id}`)}
               />
             } />
             <Route path="solve/:solveId" element={<SolvePage />} />

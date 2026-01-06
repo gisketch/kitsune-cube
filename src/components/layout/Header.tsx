@@ -14,7 +14,7 @@ import {
   X,
   Menu,
   Trophy,
-  Users,
+  BarChart2,
   LogIn,
   LogOut,
   Cloud,
@@ -43,7 +43,7 @@ const menuItems = [
   { id: 'timer' as const, label: 'Timer', icon: RotateCcw },
   { id: 'account' as const, label: 'Account', icon: UserCircle },
   { id: 'achievements' as const, label: 'Achievements', icon: Trophy },
-  { id: 'leaderboard' as const, label: 'Leaderboard', icon: Users },
+  { id: 'leaderboard' as const, label: 'Leaderboard', icon: BarChart2 },
   { id: 'simulator' as const, label: 'Simulator', icon: FlaskConical },
   { id: 'settings' as const, label: 'Settings', icon: Settings },
 ]
@@ -180,7 +180,7 @@ export function Header({
             style={{ backgroundColor: 'var(--theme-subAlt)' }}
             title="Leaderboard"
           >
-            <Users className="h-4 w-4" style={{ color: 'var(--theme-text)', fill: 'var(--theme-text)' }} />
+            <BarChart2 className="h-4 w-4" style={{ color: 'var(--theme-text)' }} />
           </button>
           <button
             onClick={() => onNavigate('achievements')}

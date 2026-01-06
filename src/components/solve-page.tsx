@@ -125,6 +125,7 @@ export function SolvePage() {
       solve={solve}
       solveId={solveId}
       isOwner={!!localSolve}
+      userId={localSolve ? user?.uid : userId}
     />
   )
 }

@@ -5,3 +5,11 @@
 [[edge_functions]]
   path = "/api/og-image"
   function = "og-image"
+
+[[edge_functions]]
+  path = "/solve/*"
+  function = "solve-meta"
+
+[[edge_functions]]
+  path = "/app/solve/*"
+  function = "solve-meta"

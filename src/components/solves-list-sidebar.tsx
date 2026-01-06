@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ListOrdered } from 'lucide-react'
 import type { Solve } from '@/types'
 import { createSolvedCube, applyMove, COLOR_HEX, type CubeFaces } from '@/lib/cube-faces'
+import { useAuth } from '@/contexts/AuthContext'
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000)
@@ -53,6 +54,7 @@ interface SolvesListSidebarProps {
 
 export function SolvesListSidebar({ solves, maxItems = 10 }: SolvesListSidebarProps) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const displaySolves = useMemo(() => solves.slice(0, maxItems), [solves, maxItems])
 
   return (
@@ -60,7 +62,7 @@ export function SolvesListSidebar({ solves, maxItems = 10 }: SolvesListSidebarPr
       <div className="mb-2 flex items-center gap-2">
         <ListOrdered className="h-4 w-4" style={{ color: 'var(--theme-sub)' }} />
         <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-          recent solves
+          recent
         </span>
       </div>
 
@@ -81,7 +83,7 @@ export function SolvesListSidebar({ solves, maxItems = 10 }: SolvesListSidebarPr
               return (
                 <button
                   key={solve.id}
-                  onClick={() => navigate(`/app/solve/${solve.id}`)}
+                  onClick={() => navigate(user?.uid ? `/app/solve/${user.uid}/${solve.id}` : `/app/solve/${solve.id}`)}
                   className="flex items-center gap-3 rounded px-1 py-1.5 transition-colors hover:bg-[var(--theme-subAlt)]"
                   style={{ 
                     borderBottom: index < displaySolves.length - 1 ? '1px solid var(--theme-subAlt)' : 'none' 

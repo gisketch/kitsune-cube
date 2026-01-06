@@ -17,12 +17,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.4',
+    date: '2026-01-06',
+    title: 'Move Counting & Copy 📋',
+    icon: 'zap',
+    changes: [
+      { type: 'feature', text: 'Copy modal with solution and scramble options' },
+      { type: 'feature', text: 'Move consolidation: D D now counts as D2 (1 move)' },
+      { type: 'improvement', text: 'TPS uses raw move count for accurate calculation' },
+      { type: 'improvement', text: 'Leaderboard icon updated to bar chart' },
+      { type: 'improvement', text: 'About and Changelog modals now mobile-friendly' },
+      { type: 'improvement', text: 'Smaller replay text on mobile for better readability' },
+    ],
+  },
+  {
     version: '0.1.3',
     date: '2026-01-06',
-    title: 'Social Sharing & UI ✨',
+    title: 'UI Polish ✨',
     icon: 'sparkles',
     changes: [
-      { type: 'feature', text: 'Dynamic OG images for shared solves with scramble preview' },
       { type: 'improvement', text: 'Achievement notifications now show unlock progress' },
       { type: 'improvement', text: 'Mobile CFOP breakdown displays all 4 F2L slots individually' },
     ],
