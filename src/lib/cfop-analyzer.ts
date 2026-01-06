@@ -434,3 +434,58 @@ export function formatCFOPAnalysis(analysis: CFOPAnalysis): string {
 
   return lines.join('\n')
 }
+
+export type CFOPPhaseName = 'cross' | 'f2l-1' | 'f2l-2' | 'f2l-3' | 'f2l-4' | 'oll' | 'pll' | 'solved' | 'scrambled'
+
+export interface CurrentCFOPPhase {
+  phase: CFOPPhaseName
+  crossColor: Color | null
+  crossSolved: boolean
+  f2lSlotsSolved: boolean[]
+  ollSolved: boolean
+  pllSolved: boolean
+}
+
+export function detectCurrentPhase(cube: CubeFaces): CurrentCFOPPhase {
+  const crossColor = detectCrossColor(cube)
+  const crossSolved = crossColor !== null
+  
+  if (!crossSolved) {
+    return {
+      phase: 'cross',
+      crossColor: null,
+      crossSolved: false,
+      f2lSlotsSolved: [false, false, false, false],
+      ollSolved: false,
+      pllSolved: false,
+    }
+  }
+  
+  const f2lSlotsSolved = [
+    isF2LSlotSolved(cube, crossColor, 0),
+    isF2LSlotSolved(cube, crossColor, 1),
+    isF2LSlotSolved(cube, crossColor, 2),
+    isF2LSlotSolved(cube, crossColor, 3),
+  ]
+  
+  const allF2LSolved = f2lSlotsSolved.every(Boolean)
+  const ollSolved = allF2LSolved && isOLLSolved(cube, crossColor)
+  const pllSolved = ollSolved && isPLLSolved(cube)
+  
+  if (pllSolved) {
+    return { phase: 'solved', crossColor, crossSolved: true, f2lSlotsSolved, ollSolved: true, pllSolved: true }
+  }
+  
+  if (ollSolved) {
+    return { phase: 'pll', crossColor, crossSolved: true, f2lSlotsSolved, ollSolved: true, pllSolved: false }
+  }
+  
+  if (allF2LSolved) {
+    return { phase: 'oll', crossColor, crossSolved: true, f2lSlotsSolved, ollSolved: false, pllSolved: false }
+  }
+  
+  const nextSlot = f2lSlotsSolved.findIndex(solved => !solved)
+  const phase = `f2l-${nextSlot + 1}` as CFOPPhaseName
+  
+  return { phase, crossColor, crossSolved: true, f2lSlotsSolved, ollSolved: false, pllSolved: false }
+}

@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { runDesyncCheck } from './debug-desync'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { Header } from '@/components/layout/Header'
@@ -35,6 +34,7 @@ import { useAchievements } from '@/contexts/AchievementsContext'
 import { BrandPickerModal, SmartCubeConnectionModal } from '@/components/brand-picker-modal'
 import { CalibrationModal } from '@/components/calibration-modal'
 import { CubeInfoModal } from '@/components/cube-info-modal'
+import { DebugCubeOverlay, useDebugMode } from '@/components/debug-cube-overlay'
 import { generateScramble, SOLVED_FACELETS } from '@/lib/cube-state'
 import { setCubeColors } from '@/lib/cube-state'
 import { setCubeFaceColors } from '@/lib/cube-faces'
@@ -154,10 +154,6 @@ function App() {
     loadSavedMacAddress()
   }, [user])
 
-  useEffect(() => {
-    runDesyncCheck()
-  }, [])
-
   const handleMacAddressResolved = useCallback(async (mac: string) => {
     setSavedMacAddress(mac)
     if (user && db && !isOfflineMode) {
@@ -211,6 +207,7 @@ function App() {
 
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false)
   const [isCubeInfoOpen, setIsCubeInfoOpen] = useState(false)
+  const { isDebugMode, setIsDebugMode } = useDebugMode()
   const hasInitializedRef = useRef(false)
 
   useEffect(() => {
@@ -889,6 +886,12 @@ function App() {
           }}
           onNavigate={handleNavigate}
           isConnected={isConnected}
+        />
+
+        <DebugCubeOverlay
+          cubeFaces={cubeFaces}
+          isOpen={isDebugMode}
+          onClose={() => setIsDebugMode(false)}
         />
       </div>
     </div>

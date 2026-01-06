@@ -17,10 +17,11 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import * as THREE from 'three'
 import { CubeViewer, type RubiksCubeRef } from '@/components/cube'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
-import { createSolvedCube, applyMove, cubeFacesToFacelets, COLOR_HEX } from '@/lib/cube-faces'
+import { createSolvedCube, applyMove, cubeFacesToFacelets, COLOR_HEX, type CubeFaces } from '@/lib/cube-faces'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal'
 import { CopyModal } from '@/components/copy-modal'
+import { DebugCubeOverlay, useDebugMode } from '@/components/debug-cube-overlay'
 import { formatTime, formatDuration } from '@/lib/format'
 import { consolidateMoves, countConsolidatedMoves } from '@/lib/move-utils'
 import { useGoals } from '@/contexts/GoalsContext'
@@ -99,6 +100,24 @@ function StatCard({ label, value }: { label: string; value: string }) {
   )
 }
 
+function CrossColorFacelet({ color }: { color: string | null | undefined }) {
+  if (!color) return null
+  const colorMap: Record<string, string> = {
+    W: COLOR_HEX.W,
+    Y: COLOR_HEX.Y,
+    G: COLOR_HEX.G,
+    B: COLOR_HEX.B,
+    R: COLOR_HEX.R,
+    O: COLOR_HEX.O,
+  }
+  return (
+    <div
+      className="h-2 w-2 rounded-[1px] md:h-2.5 md:w-2.5"
+      style={{ backgroundColor: colorMap[color] || 'var(--theme-sub)' }}
+    />
+  )
+}
+
 function PhaseStatCard({
   label,
   moves,
@@ -109,6 +128,7 @@ function PhaseStatCard({
   displayMode = 'time',
   goal,
   hideRecognition = false,
+  crossColor,
 }: {
   label: string
   moves: number
@@ -119,6 +139,7 @@ function PhaseStatCard({
   displayMode?: DisplayMode
   goal?: PhaseGoal
   hideRecognition?: boolean
+  crossColor?: string | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
   
@@ -138,23 +159,28 @@ function PhaseStatCard({
   const timeMet = goal && moves > 0 ? duration <= goal.time : null
   const goalMet = displayMode === 'moves' ? movesMet : timeMet
 
+  const isCrossPhase = label.toLowerCase() === 'cross'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center md:items-start"
     >
-      <div className="flex items-center gap-1">
-        <span className="text-xs tracking-wide md:text-sm" style={{ color: 'var(--theme-sub)' }}>
-          {label}
-        </span>
-        {goalMet !== null && (
-          goalMet ? (
-            <TriangleDown className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeGreen)' }} />
-          ) : (
-            <TriangleUp className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeRed)' }} />
-          )
-        )}
+      <div className={`flex items-center ${isCrossPhase && crossColor ? 'w-full justify-between' : 'gap-1'}`}>
+        <div className="flex items-center gap-1">
+          <span className="text-xs tracking-wide md:text-sm" style={{ color: 'var(--theme-sub)' }}>
+            {label}
+          </span>
+          {goalMet !== null && (
+            goalMet ? (
+              <TriangleDown className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeGreen)' }} />
+            ) : (
+              <TriangleUp className="h-2.5 w-2.5" style={{ color: 'var(--theme-cubeRed)' }} />
+            )
+          )}
+        </div>
+        {isCrossPhase && crossColor && <CrossColorFacelet color={crossColor} />}
       </div>
       {moves > 0 ? (
         <Tooltip open={isOpen} onOpenChange={setIsOpen}>
@@ -172,6 +198,18 @@ function PhaseStatCard({
             className="border-[var(--theme-subAlt)] bg-[var(--theme-bgSecondary)]"
           >
             <div className="flex flex-col gap-1.5 text-xs">
+              {isCrossPhase && crossColor && (
+                <>
+                  <div className="flex items-center justify-between gap-4">
+                    <span style={{ color: 'var(--theme-sub)' }}>Cross Color</span>
+                    <CrossColorFacelet color={crossColor} />
+                  </div>
+                  <div
+                    className="my-0.5 h-px w-full"
+                    style={{ backgroundColor: 'var(--theme-subAlt)' }}
+                  />
+                </>
+              )}
               <div className="flex justify-between gap-4">
                 <span style={{ color: 'var(--theme-sub)' }}>Moves</span>
                 <span className="font-medium" style={{ color: 'var(--theme-text)' }}>
@@ -762,6 +800,8 @@ export function SolveResults({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
 
+  const { isDebugMode, setIsDebugMode } = useDebugMode()
+
   useEffect(() => {
     localStorage.setItem('solve-results-display-mode', displayMode)
   }, [displayMode])
@@ -1032,6 +1072,26 @@ export function SolveResults({
     },
     [solve, allMoves],
   )
+
+  const computeCubeFacesAtIndex = useCallback(
+    (index: number): CubeFaces => {
+      const scrambleMoves = solve ? parseAlgorithm(solve.scramble) : []
+      let cube = createSolvedCube()
+      for (const move of scrambleMoves) {
+        cube = applyMove(cube, move)
+      }
+      for (let i = 0; i <= index && i < allMoves.length; i++) {
+        cube = applyMove(cube, allMoves[i])
+      }
+      return cube
+    },
+    [solve, allMoves],
+  )
+
+  const replayCubeFaces = useMemo(() => {
+    if (!isReplayMode) return createSolvedCube()
+    return computeCubeFacesAtIndex(currentMoveIndex)
+  }, [isReplayMode, currentMoveIndex, computeCubeFacesAtIndex])
 
   const [replayKey, setReplayKey] = useState(0)
 
@@ -1674,6 +1734,7 @@ export function SolveResults({
                     displayMode={displayMode}
                     goal={goals.cross}
                     hideRecognition
+                    crossColor={analysis?.crossColor}
                   />
                   <PhaseStatCard
                     label="f2l"
@@ -1720,6 +1781,7 @@ export function SolveResults({
                     displayMode={displayMode}
                     goal={goals.cross}
                     hideRecognition
+                    crossColor={analysis?.crossColor}
                   />
                   <PhaseStatCard
                     label="f2l"
@@ -1845,6 +1907,14 @@ export function SolveResults({
         onCopySolution={handleCopySolution}
         onCopyScramble={handleCopyScramble}
       />
+
+      {isReplayMode && (
+        <DebugCubeOverlay
+          cubeFaces={replayCubeFaces}
+          isOpen={isDebugMode}
+          onClose={() => setIsDebugMode(false)}
+        />
+      )}
     </TooltipProvider>
   )
 }
