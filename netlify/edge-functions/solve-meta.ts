@@ -153,6 +153,8 @@ export default async function handler(request: Request, context: Context) {
     console.log('[solve-meta] Found solve data, time:', solveData.time)
     const time = solveData.time || 0
     const scramble = solveData.scramble || ''
+    const solution = solveData.solution || []
+    const moves = Array.isArray(solution) ? solution.length : 0
     const formattedTime = formatTime(time)
     
     const title = `${formattedTime} Solve by ${userName} - Kitsune Cube`
@@ -162,6 +164,7 @@ export default async function handler(request: Request, context: Context) {
     ogImageParams.set('time', time.toString())
     ogImageParams.set('scramble', scramble)
     ogImageParams.set('name', userName)
+    ogImageParams.set('moves', moves.toString())
     const ogImageUrl = `https://kitsunecube.com/api/og-image?${ogImageParams.toString()}`
     
     const metaTags = `

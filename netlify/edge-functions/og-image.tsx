@@ -61,6 +61,10 @@ function applyScramble(scramble: string): Record<string, string[]> {
   return cube
 }
 
+function countMoves(scramble: string): number {
+  return scramble.trim().split(/\s+/).filter(m => m.length > 0).length
+}
+
 function formatTime(ms: number): string {
   const totalSeconds = ms / 1000
   const minutes = Math.floor(totalSeconds / 60)
@@ -74,20 +78,77 @@ function formatTime(ms: number): string {
 function CubeCell({ color }: { color: string }) {
   return React.createElement('div', {
     style: {
-      width: '80px',
-      height: '80px',
+      width: '52px',
+      height: '52px',
       backgroundColor: color,
-      borderRadius: '12px',
-      boxShadow: 'inset 0 -4px 0 rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.3)',
+      borderRadius: '8px',
+      boxShadow: 'inset 0 -3px 0 rgba(0,0,0,0.2)',
     }
   })
 }
 
 function CubeRow({ colors }: { colors: string[] }) {
-  return React.createElement('div', { style: { display: 'flex', gap: '8px' } },
+  return React.createElement('div', { style: { display: 'flex', gap: '6px' } },
     React.createElement(CubeCell, { color: colors[0] }),
     React.createElement(CubeCell, { color: colors[1] }),
     React.createElement(CubeCell, { color: colors[2] }),
+  )
+}
+
+function StatItem({ label, value }: { label: string; value: string }) {
+  return React.createElement('div', {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }
+  },
+    React.createElement('span', {
+      style: {
+        fontSize: '14px',
+        color: '#666666',
+        letterSpacing: '1px',
+        marginBottom: '4px',
+      }
+    }, label),
+    React.createElement('span', {
+      style: {
+        fontSize: '32px',
+        fontWeight: '700',
+        color: '#ffffff',
+      }
+    }, value),
+  )
+}
+
+async function loadFont(): Promise<ArrayBuffer | null> {
+  try {
+    const fontUrl = 'https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-700-normal.woff'
+    const response = await fetch(fontUrl)
+    if (response.ok) {
+      return await response.arrayBuffer()
+    }
+    const fallback = 'https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2'
+    const res2 = await fetch(fallback)
+    if (res2.ok) {
+      return await res2.arrayBuffer()
+    }
+  } catch (e) {
+    console.error('Failed to load font:', e)
+  }
+  return null
+}
+
+function FoxLogo({ size = 36 }: { size?: number }) {
+  return React.createElement('svg', {
+    width: size,
+    height: size,
+    viewBox: '0 0 100 100',
+    style: { flexShrink: 0 },
+  },
+    React.createElement('path', { d: 'M25 42 L35 22 L45 42 Z', fill: '#E67E22' }),
+    React.createElement('path', { d: 'M55 42 L65 22 L75 42 Z', fill: '#E67E22' }),
+    React.createElement('path', { d: 'M25 42 H75 V65 L50 90 L25 65 Z', fill: '#D35400' }),
   )
 }
 
@@ -96,33 +157,38 @@ export default async function handler(req: Request) {
   
   const time = parseInt(url.searchParams.get('time') || '0')
   const scramble = decodeURIComponent(url.searchParams.get('scramble') || '')
-  const userName = decodeURIComponent(url.searchParams.get('name') || 'Anonymous')
+  const moves = parseInt(url.searchParams.get('moves') || '0') || countMoves(scramble)
+  const userName = decodeURIComponent(url.searchParams.get('name') || 'Speedcuber')
   const userAvatar = url.searchParams.get('avatar') ? decodeURIComponent(url.searchParams.get('avatar')!) : null
+
+  const tps = time > 0 ? (moves / (time / 1000)).toFixed(2) : '0.00'
 
   const cube = applyScramble(scramble)
   const front = cube.F
   const colors = front.map(c => CUBE_COLORS[c] || '#888')
 
+  const fontData = await loadFont()
+
   const avatarElement = userAvatar 
     ? React.createElement('img', {
         src: userAvatar,
-        width: 64,
-        height: 64,
+        width: 48,
+        height: 48,
         style: {
           borderRadius: '50%',
-          border: '3px solid #f97316',
+          border: '2px solid #f97316',
         }
       })
     : React.createElement('div', {
         style: {
-          width: '64px',
-          height: '64px',
+          width: '48px',
+          height: '48px',
           borderRadius: '50%',
           backgroundColor: '#f97316',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '28px',
+          fontSize: '20px',
           fontWeight: 'bold',
           color: '#0a0a0a',
         }
@@ -136,67 +202,125 @@ export default async function handler(req: Request) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)',
-      fontFamily: 'system-ui, sans-serif',
+      background: 'linear-gradient(145deg, #141414 0%, #0a0a0a 100%)',
+      fontFamily: 'JetBrains Mono, monospace',
       position: 'relative',
     }
   },
     React.createElement('div', {
       style: {
+        position: 'absolute',
+        top: '30px',
+        left: '40px',
         display: 'flex',
         alignItems: 'center',
+        gap: '16px',
+      }
+    },
+      avatarElement,
+      React.createElement('span', {
+        style: {
+          fontSize: '24px',
+          color: '#ffffff',
+          fontWeight: '600',
+        }
+      }, userName),
+    ),
+
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: '60px',
-        padding: '40px',
       }
     },
       React.createElement('div', {
         style: {
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
-          padding: '24px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '24px',
-          border: '2px solid rgba(249, 115, 22, 0.3)',
+          gap: '6px',
+          padding: '20px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: '16px',
+          border: '1px solid rgba(249, 115, 22, 0.2)',
         }
       },
         React.createElement(CubeRow, { colors: [colors[0], colors[1], colors[2]] }),
         React.createElement(CubeRow, { colors: [colors[3], colors[4], colors[5]] }),
         React.createElement(CubeRow, { colors: [colors[6], colors[7], colors[8]] }),
       ),
+
       React.createElement('div', {
         style: {
           display: 'flex',
           flexDirection: 'column',
-          gap: '24px',
+          alignItems: 'center',
+          gap: '20px',
         }
       },
         React.createElement('div', {
           style: {
-            fontSize: '96px',
-            fontWeight: 'bold',
-            color: '#f97316',
-            letterSpacing: '-2px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
           }
-        }, formatTime(time)),
+        },
+          React.createElement('span', {
+            style: {
+              fontSize: '14px',
+              color: '#666666',
+              letterSpacing: '1px',
+            }
+          }, 'time'),
+          React.createElement('span', {
+            style: {
+              fontSize: '72px',
+              fontWeight: '700',
+              color: '#f97316',
+              lineHeight: 1,
+            }
+          }, formatTime(time)),
+        ),
+
         React.createElement('div', {
           style: {
             display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
+            gap: '40px',
           }
         },
-          avatarElement,
+          React.createElement(StatItem, { label: 'moves', value: moves.toString() }),
+          React.createElement(StatItem, { label: 'tps', value: tps }),
+        ),
+
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '12px',
+          }
+        },
           React.createElement('span', {
             style: {
-              fontSize: '32px',
-              color: '#ffffff',
-              fontWeight: '600',
+              fontSize: '12px',
+              color: '#666666',
+              letterSpacing: '1px',
             }
-          }, userName),
+          }, 'scramble'),
+          React.createElement('span', {
+            style: {
+              fontSize: '16px',
+              color: '#888888',
+              maxWidth: '320px',
+              textAlign: 'center',
+            }
+          }, scramble || 'No scramble'),
         ),
       ),
     ),
+
     React.createElement('div', {
       style: {
         position: 'absolute',
@@ -206,42 +330,33 @@ export default async function handler(req: Request) {
         gap: '12px',
       }
     },
-      React.createElement('div', {
-        style: {
-          width: '40px',
-          height: '40px',
-          backgroundColor: '#f97316',
-          borderRadius: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }
-      }, 
-        React.createElement('svg', {
-          width: 24,
-          height: 24,
-          viewBox: '0 0 100 100',
-          xmlns: 'http://www.w3.org/2000/svg',
-        },
-          React.createElement('path', { d: 'M25 42 L35 22 L45 42 Z', fill: '#0a0a0a' }),
-          React.createElement('path', { d: 'M55 42 L65 22 L75 42 Z', fill: '#0a0a0a' }),
-          React.createElement('path', { d: 'M25 42 H75 V65 L50 90 L25 65 Z', fill: '#0a0a0a' }),
-        ),
-      ),
+      React.createElement(FoxLogo, { size: 32 }),
       React.createElement('span', {
         style: {
-          fontSize: '24px',
-          fontWeight: 'bold',
-          color: '#888888',
+          fontSize: '20px',
+          fontWeight: '600',
+          color: '#666666',
         }
       }, 'kitsunecube.com'),
     ),
   )
 
-  return new ImageResponse(element, {
+  const options: { width: number; height: number; fonts?: { name: string; data: ArrayBuffer; style: string }[] } = {
     width: 1200,
     height: 630,
-  })
+  }
+
+  if (fontData) {
+    options.fonts = [
+      {
+        name: 'JetBrains Mono',
+        data: fontData,
+        style: 'normal',
+      },
+    ]
+  }
+
+  return new ImageResponse(element, options)
 }
 
 export const config = {
