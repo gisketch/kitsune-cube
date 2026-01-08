@@ -1,6 +1,12 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  memoryLocalCache,
+  type Firestore,
+} from 'firebase/firestore'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -40,7 +46,19 @@ let googleProvider: GoogleAuthProvider | null = null
 if (hasValidConfig) {
   app = initializeApp(firebaseConfig)
   auth = getAuth(app)
-  db = getFirestore(app)
+
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    })
+  } catch {
+    db = initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+    })
+  }
+
   storage = getStorage(app)
   googleProvider = new GoogleAuthProvider()
 }

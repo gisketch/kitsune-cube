@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Play, ExternalLink, Loader2, RotateCw } from 'lucide-react'
-import { query, orderBy, limit, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore'
+import { query, orderBy, limit, getDocs, collection } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { formatTime } from '@/lib/format'
 
@@ -19,54 +19,46 @@ interface LeaderboardSolve {
 async function fetchTopSolves(): Promise<LeaderboardSolve[]> {
   if (!db) return []
 
+  const firestore = db
+
   try {
-    const solvesRef = collectionGroup(db, 'solves')
-    const q = query(solvesRef, orderBy('time', 'asc'), limit(30))
-    const snapshot = await getDocs(q)
-    
-    const validSolves: LeaderboardSolve[] = []
-    const userCache = new Map<string, { displayName: string; photoURL: string | null }>()
+    const usersRef = collection(firestore, 'users')
+    const usersQuery = query(usersRef, orderBy('stats.verifiedBestSolveTime', 'asc'), limit(15))
+    const usersSnapshot = await getDocs(usersQuery)
 
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data()
+    const solvePromises = usersSnapshot.docs.map(async (userDoc) => {
+      const userData = userDoc.data()
+      const stats = userData.stats || {}
+      const bestTime = stats.verifiedBestSolveTime
 
-      if (data.isManual || data.isRepeatedScramble || data.dnf) continue
-      if (!data.solution || data.solution.length === 0) continue
+      if (!bestTime || bestTime <= 0) return null
 
-      const pathParts = docSnap.ref.path.split('/')
-      const ownerId = pathParts[1]
+      const solvesRef = collection(firestore, 'users', userDoc.id, 'solves')
+      const solveQuery = query(solvesRef, orderBy('time', 'asc'), limit(5))
+      const solvesSnapshot = await getDocs(solveQuery)
 
-      let ownerInfo = userCache.get(ownerId)
-      if (!ownerInfo) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', ownerId))
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            ownerInfo = { displayName: userData.displayName || 'Cuber', photoURL: userData.photoURL || null }
-          } else {
-            ownerInfo = { displayName: 'Cuber', photoURL: null }
-          }
-          userCache.set(ownerId, ownerInfo)
-        } catch {
-          ownerInfo = { displayName: 'Cuber', photoURL: null }
-        }
+      for (const solveDoc of solvesSnapshot.docs) {
+        const solveData = solveDoc.data()
+
+        if (solveData.isManual || solveData.dnf) continue
+        if (!solveData.solution || solveData.solution.length === 0) continue
+
+        return {
+          id: solveDoc.id,
+          solveId: solveData.solveId || solveDoc.id,
+          ownerId: userDoc.id,
+          displayName: userData.displayName || 'Cuber',
+          photoURL: userData.photoURL || null,
+          time: solveData.plusTwo ? solveData.time + 2000 : solveData.time,
+          scramble: solveData.scramble || '',
+          moveCount: solveData.solution?.length || 0,
+        } as LeaderboardSolve
       }
+      return null
+    })
 
-      validSolves.push({
-        id: docSnap.id,
-        solveId: data.solveId || docSnap.id,
-        ownerId,
-        displayName: ownerInfo.displayName,
-        photoURL: ownerInfo.photoURL,
-        time: data.plusTwo ? data.time + 2000 : data.time,
-        scramble: data.scramble || '',
-        moveCount: data.solution?.length || 0,
-      })
-
-      if (validSolves.length >= 10) break
-    }
-
-    return validSolves
+    const results = await Promise.all(solvePromises)
+    return results.filter((s): s is LeaderboardSolve => s !== null)
   } catch (error) {
     console.error('Error fetching top solves:', error)
     return []

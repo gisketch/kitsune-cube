@@ -1,10 +1,9 @@
 import { motion } from 'framer-motion'
-import { Bluetooth, Box, FlaskConical, Check, Compass } from 'lucide-react'
+import { Bluetooth, Box, FlaskConical, Check } from 'lucide-react'
 
 type CubeBrand = {
   name: string
   color: string
-  hasGyro: boolean
   featured: string[]
   moreCount?: number
   experimental?: boolean
@@ -15,31 +14,27 @@ const CUBE_BRANDS: CubeBrand[] = [
   {
     name: 'GAN',
     color: '#22c55e',
-    hasGyro: true,
-    description: 'Full support with gyroscope for solve replays',
-    featured: ['GAN 14 ui FreePlay', 'GAN 12 ui', 'GAN 356i Carry 2'],
-    moreCount: 7,
+    description: 'Full support with gyroscope on most models',
+    featured: ['GAN 12 ui FreePlay', 'GAN 356i 3', 'GAN 356i Carry 2'],
+    moreCount: 8,
   },
   {
     name: 'MoYu',
     color: '#ef4444',
-    hasGyro: false,
     experimental: true,
-    description: 'Move tracking for timing and analysis',
+    description: 'Gyroscope support on V10 AI',
     featured: ['WeiLong V10 AI', 'MoYu AI 2023'],
   },
   {
     name: 'QiYi',
     color: '#3b82f6',
-    hasGyro: false,
     experimental: true,
     description: 'Affordable smart cube connectivity',
-    featured: ['QiYi AI Smart Cube'],
+    featured: ['QiYi QY-SC-S', 'QiYi AI Smart Cube'],
   },
   {
     name: 'GiiKER',
     color: '#a855f7',
-    hasGyro: false,
     experimental: true,
     description: 'Classic connected cube support',
     featured: ['GiiKER i3S', 'GiiKER i2'],
@@ -116,13 +111,6 @@ export function SupportedCubes() {
                         {brand.description}
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                <div className="mb-4 flex items-center gap-4">
-                  <div className="flex items-center gap-1.5 text-sm" style={{ color: brand.hasGyro ? brand.color : 'var(--theme-sub)' }}>
-                    <Compass className="h-4 w-4" />
-                    <span>{brand.hasGyro ? 'Gyroscope' : 'No Gyro'}</span>
                   </div>
                 </div>
 

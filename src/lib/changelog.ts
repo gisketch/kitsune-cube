@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.6',
+    date: '2026-01-08',
+    title: 'Faster Loading ⚡',
+    description: 'Major performance improvements! The app now loads instantly with cached data.',
+    icon: 'zap',
+    changes: [
+      { type: 'improvement', text: 'App loads much faster with offline caching' },
+      { type: 'improvement', text: 'Your level and stats now appear instantly on startup' },
+      { type: 'improvement', text: 'Scrambles generate instantly after first load' },
+      { type: 'fix', text: 'Personal Bests now shows only one entry per user (true PB ranking)' },
+      { type: 'feature', text: 'Leaderboard tabs now show category descriptions' },
+    ],
+  },
+  {
     version: '0.1.5',
     date: '2026-01-08',
     title: 'Smart Cube Fixes 🧊',

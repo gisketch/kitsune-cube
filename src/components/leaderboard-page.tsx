@@ -2,16 +2,14 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   collection,
-  collectionGroup,
   query,
   getDocs,
-  getDoc,
-  doc,
   orderBy,
   limit,
   startAfter,
   type DocumentData,
   type QueryDocumentSnapshot,
+  type Query,
 } from 'firebase/firestore'
 import { db, isOfflineMode } from '@/lib/firebase'
 import {
@@ -35,7 +33,7 @@ import { formatTime } from '@/lib/format'
 import { getLevelFromXP } from '@/lib/experience'
 import { createSolvedCube, applyMove, COLOR_HEX, type CubeFaces } from '@/lib/cube-faces'
 
-type LeaderboardTab = 'avgTime' | 'level' | 'achievements' | 'singleSolve'
+type LeaderboardTab = 'avgTime' | 'level' | 'achievements' | 'personalBest'
 
 interface LeaderboardUser {
   id: string
@@ -77,7 +75,7 @@ export function LeaderboardPage() {
   const [hasMore, setHasMore] = useState(true)
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null)
 
-  const isUserTab = tab !== 'singleSolve'
+  const isUserTab = tab !== 'personalBest'
 
   const handleViewSolve = useCallback((solve: LeaderboardSolve) => {
     navigate(`/app/solve/${solve.ownerId}/${solve.solveId}`)
@@ -103,7 +101,6 @@ export function LeaderboardPage() {
 
     const fetchData = async () => {
       setLoading(true)
-
       try {
         if (isUserTab) {
           await fetchUserLeaderboard()
@@ -169,75 +166,78 @@ export function LeaderboardPage() {
   }
 
   async function fetchSolveLeaderboard() {
-    const solvesRef = collectionGroup(db!, 'solves')
+    const usersRef = collection(db!, 'users')
 
-    let q
+    let q: Query<DocumentData, DocumentData>
     if (page === 1 || !lastDoc) {
-      q = query(solvesRef, orderBy('time', 'asc'), limit(ITEMS_PER_PAGE * 3))
+      q = query(
+        usersRef,
+        orderBy('stats.verifiedBestSolveTime', 'asc'),
+        limit(ITEMS_PER_PAGE)
+      )
     } else {
-      q = query(solvesRef, orderBy('time', 'asc'), startAfter(lastDoc), limit(ITEMS_PER_PAGE * 3))
+      q = query(
+        usersRef,
+        orderBy('stats.verifiedBestSolveTime', 'asc'),
+        startAfter(lastDoc),
+        limit(ITEMS_PER_PAGE)
+      )
     }
 
     const snapshot = await getDocs(q)
     const leaderboardSolves: LeaderboardSolve[] = []
-    const userCache = new Map<string, { displayName: string; photoURL: string | null }>()
 
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data()
+    const solvePromises = snapshot.docs.map(async (userDoc) => {
+      const userData = userDoc.data()
+      const stats = userData.stats || {}
+      const bestTime = stats.verifiedBestSolveTime
 
-      if (data.isManual || data.isRepeatedScramble || data.dnf) {
-        continue
+      if (!bestTime || bestTime <= 0) return null
+
+      const solvesRef = collection(db!, 'users', userDoc.id, 'solves')
+      const solveQuery = query(
+        solvesRef,
+        orderBy('time', 'asc'),
+        limit(10)
+      )
+      const solvesSnapshot = await getDocs(solveQuery)
+
+      for (const solveDoc of solvesSnapshot.docs) {
+        const solveData = solveDoc.data()
+
+        if (solveData.isManual || solveData.dnf) continue
+        if (!solveData.solution || solveData.solution.length === 0) continue
+
+        return {
+          id: solveDoc.id,
+          solveId: solveData.solveId || solveDoc.id,
+          ownerId: userDoc.id,
+          displayName: userData.displayName || 'Cuber',
+          photoURL: userData.photoURL || null,
+          time: solveData.plusTwo ? solveData.time + 2000 : solveData.time,
+          scramble: solveData.scramble || '',
+          date: solveData.date || '',
+          solution: solveData.solution || [],
+          gyroData: solveData.gyroData,
+          cfopAnalysis: solveData.cfopAnalysis,
+          moveTimings: solveData.moveTimings,
+        } as LeaderboardSolve
       }
+      return null
+    })
 
-      if (!data.solution || data.solution.length === 0) {
-        continue
-      }
-
-      const pathParts = docSnap.ref.path.split('/')
-      const ownerId = pathParts[1]
-
-      let ownerInfo = userCache.get(ownerId)
-      if (!ownerInfo) {
-        try {
-          const userDoc = await getDoc(doc(db!, 'users', ownerId))
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            ownerInfo = {
-              displayName: userData.displayName || 'Cuber',
-              photoURL: userData.photoURL || null,
-            }
-          } else {
-            ownerInfo = { displayName: 'Cuber', photoURL: null }
-          }
-          userCache.set(ownerId, ownerInfo)
-        } catch {
-          ownerInfo = { displayName: 'Cuber', photoURL: null }
-        }
-      }
-
-      leaderboardSolves.push({
-        id: docSnap.id,
-        solveId: data.solveId || docSnap.id,
-        ownerId,
-        displayName: ownerInfo.displayName,
-        photoURL: ownerInfo.photoURL,
-        time: data.plusTwo ? data.time + 2000 : data.time,
-        scramble: data.scramble || '',
-        date: data.date || '',
-        solution: data.solution || [],
-        gyroData: data.gyroData,
-        cfopAnalysis: data.cfopAnalysis,
-        moveTimings: data.moveTimings,
-      })
-
-      if (leaderboardSolves.length >= ITEMS_PER_PAGE) break
+    const results = await Promise.all(solvePromises)
+    for (const solve of results) {
+      if (solve) leaderboardSolves.push(solve)
     }
+
+    leaderboardSolves.sort((a, b) => a.time - b.time)
 
     if (snapshot.docs.length > 0) {
       setLastDoc(snapshot.docs[snapshot.docs.length - 1])
     }
     setSolves(leaderboardSolves)
-    setHasMore(snapshot.docs.length >= ITEMS_PER_PAGE)
+    setHasMore(snapshot.docs.length === ITEMS_PER_PAGE)
   }
 
   function sortUsers(userList: LeaderboardUser[], category: LeaderboardTab): LeaderboardUser[] {
@@ -280,8 +280,15 @@ export function LeaderboardPage() {
     { id: 'avgTime', label: 'Average Time', shortLabel: 'Avg', icon: Clock },
     { id: 'level', label: 'Level', shortLabel: 'Lvl', icon: Crown },
     { id: 'achievements', label: 'Achievements', shortLabel: 'Ach', icon: Trophy },
-    { id: 'singleSolve', label: 'Best Solves', shortLabel: 'Best', icon: Zap },
+    { id: 'personalBest', label: 'Personal Bests', shortLabel: 'PB', icon: Zap },
   ]
+
+  const categoryDescriptions: Record<LeaderboardTab, string> = {
+    avgTime: 'Ranked by verified average solve time. Requires at least 5 smart cube solves.',
+    level: 'Ranked by experience level earned through solving and achievements.',
+    achievements: 'Ranked by total achievement badges unlocked across all tiers.',
+    personalBest: "Each cuber's single fastest verified smart cube solve.",
+  }
 
   const goToPreviousPage = () => {
     if (page > 1) {
@@ -325,6 +332,10 @@ export function LeaderboardPage() {
           )
         })}
       </div>
+
+      <p className="text-xs mb-3 px-1" style={{ color: 'var(--theme-sub)' }}>
+        {categoryDescriptions[tab]}
+      </p>
 
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: 'var(--theme-bgSecondary)' }}>
         {isUserTab ? <UserLeaderboardHeader tab={tab} /> : <SolveLeaderboardHeader />}
@@ -639,7 +650,7 @@ function EmptyState({ tab }: { tab: LeaderboardTab }) {
     avgTime: 'No users with enough solves yet',
     level: 'No users found',
     achievements: 'No users with achievements yet',
-    singleSolve: 'No smart cube solves found',
+    personalBest: 'No personal bests found',
   }
 
   return (

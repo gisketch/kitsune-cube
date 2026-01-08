@@ -4,6 +4,37 @@ import { db, isOfflineMode } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { calculateSolveXP, getLevelFromXP } from '@/lib/experience'
 
+const XP_CACHE_KEY = 'kitsune_xp_cache'
+
+interface CachedXP {
+  totalXP: number
+  uid: string
+  timestamp: number
+}
+
+function getCachedXP(uid: string): number | null {
+  try {
+    const cached = localStorage.getItem(XP_CACHE_KEY)
+    if (!cached) return null
+    const data: CachedXP = JSON.parse(cached)
+    if (data.uid !== uid) return null
+    const oneDay = 24 * 60 * 60 * 1000
+    if (Date.now() - data.timestamp > oneDay) return null
+    return data.totalXP
+  } catch {
+    return null
+  }
+}
+
+function setCachedXP(uid: string, totalXP: number): void {
+  try {
+    const data: CachedXP = { totalXP, uid, timestamp: Date.now() }
+    localStorage.setItem(XP_CACHE_KEY, JSON.stringify(data))
+  } catch {
+    // localStorage unavailable
+  }
+}
+
 interface UserXPData {
   totalXP: number
   level: number
@@ -25,7 +56,12 @@ const ExperienceContext = createContext<ExperienceContextType | null>(null)
 
 export function ExperienceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [totalXP, setTotalXP] = useState(0)
+  const [totalXP, setTotalXP] = useState(() => {
+    if (user?.uid) {
+      return getCachedXP(user.uid) ?? 0
+    }
+    return 0
+  })
   const [loading, setLoading] = useState(true)
   const [recentXPGain, setRecentXPGain] = useState<number | null>(null)
   const docInitialized = useRef(false)
@@ -43,6 +79,11 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       docInitialized.current = false
       return
+    }
+
+    const cachedXP = getCachedXP(user!.uid)
+    if (cachedXP !== null) {
+      setTotalXP(cachedXP)
     }
 
     docInitialized.current = false
@@ -74,7 +115,9 @@ export function ExperienceProvider({ children }: { children: ReactNode }) {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data()
-          setTotalXP(data.totalXP || 0)
+          const serverXP = data.totalXP || 0
+          setTotalXP(serverXP)
+          setCachedXP(user!.uid, serverXP)
         }
         setLoading(false)
       },

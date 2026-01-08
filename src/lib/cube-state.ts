@@ -238,9 +238,67 @@ export async function applyMove(state: CubeState, move: string): Promise<CubeSta
   }
 }
 
-export async function generateScramble(): Promise<string> {
+const SCRAMBLE_CACHE_KEY = 'kitsune_scramble_cache'
+let nextScramblePromise: Promise<string> | null = null
+
+function getCachedScramble(): string | null {
+  try {
+    return localStorage.getItem(SCRAMBLE_CACHE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function setCachedScramble(scramble: string): void {
+  try {
+    localStorage.setItem(SCRAMBLE_CACHE_KEY, scramble)
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+function clearCachedScramble(): void {
+  try {
+    localStorage.removeItem(SCRAMBLE_CACHE_KEY)
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+async function generateFreshScramble(): Promise<string> {
   const scramble = await randomScrambleForEvent('333')
   return scramble.toString()
+}
+
+export function preloadNextScramble(): void {
+  if (!nextScramblePromise) {
+    nextScramblePromise = generateFreshScramble()
+    nextScramblePromise.then((scramble) => {
+      setCachedScramble(scramble)
+    })
+  }
+}
+
+export async function generateScramble(): Promise<string> {
+  const cached = getCachedScramble()
+  
+  if (cached) {
+    clearCachedScramble()
+    nextScramblePromise = null
+    preloadNextScramble()
+    return cached
+  }
+  
+  if (nextScramblePromise) {
+    const scramble = await nextScramblePromise
+    nextScramblePromise = null
+    preloadNextScramble()
+    return scramble
+  }
+  
+  const scramble = await generateFreshScramble()
+  preloadNextScramble()
+  return scramble
 }
 
 export function isCubeSolved(state: CubeState): boolean {
