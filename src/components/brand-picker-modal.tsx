@@ -179,17 +179,41 @@ export function BrandPickerModal({
                       >
                         Supported Models
                       </p>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {brandInfo.supportedModels.map((model) => (
                           <div
-                            key={model}
-                            className="flex items-center gap-2 text-xs"
+                            key={model.name}
+                            className="flex items-start gap-2 text-xs"
                             style={{ color: 'var(--theme-text)' }}
                           >
-                            <Check className="h-3 w-3 flex-shrink-0" style={{ color: brandColor }} />
-                            <span>{model}</span>
+                            {model.status === 'confirmed' ? (
+                              <Check className="mt-0.5 h-3 w-3 flex-shrink-0" style={{ color: '#22c55e' }} />
+                            ) : (
+                              <HelpCircle className="mt-0.5 h-3 w-3 flex-shrink-0" style={{ color: 'var(--theme-sub)' }} />
+                            )}
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1.5">
+                                <span>{model.name}</span>
+                                {model.hasGyro && (
+                                  <Compass className="h-3 w-3" style={{ color: 'var(--theme-accent)' }} />
+                                )}
+                              </div>
+                              {model.note && (
+                                <span className="text-[10px]" style={{ color: 'var(--theme-sub)' }}>
+                                  {model.note}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-2 flex items-center gap-3 border-t pt-2 text-[10px]" style={{ borderColor: 'var(--theme-subAlt)', color: 'var(--theme-sub)' }}>
+                        <span className="flex items-center gap-1">
+                          <Check className="h-2.5 w-2.5" style={{ color: '#22c55e' }} /> Confirmed
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <HelpCircle className="h-2.5 w-2.5" /> Needs testing
+                        </span>
                       </div>
                     </div>
                   </TooltipContent>

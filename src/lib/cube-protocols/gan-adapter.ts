@@ -39,7 +39,22 @@ export class GanAdapter extends BaseAdapter {
       : undefined
 
     this.connection = await connectGanCube(macAddressProvider)
-    this._deviceName = this.connection.deviceName
+
+    const deviceName = this.connection.deviceName ?? ''
+    const isGanCube =
+      deviceName.startsWith('GAN') ||
+      deviceName.startsWith('MG') ||
+      deviceName.startsWith('AiCube')
+
+    if (this.brand === 'gan' && !isGanCube) {
+      await this.connection.disconnect()
+      this.connection = null
+      throw new Error(
+        `Connected device "${deviceName}" is not a GAN cube. Please select a GAN cube or choose a different brand.`
+      )
+    }
+
+    this._deviceName = deviceName
     this._isConnected = true
 
     this.connection.events$.subscribe({

@@ -77,31 +77,44 @@ As a software developer and speedcubing enthusiast, I've been inspired by amazin
 ## 🧊 Supported Smart Cubes
 
 ### ✅ GAN (Fully Supported)
-| Cube | Gyro Support |
-|------|--------------|
-| GAN 12 UI | ✅ Yes |
-| GAN 356i V3 | ✅ Yes |
-| GAN 356i Carry | ✅ Yes |
-| GAN 356i Play | ✅ Yes |
-| All GAN Smart Cubes | ✅ Yes |
+
+| Cube | Gyro | Status |
+|------|------|--------|
+| GAN 12 ui FreePlay | ✅ Yes | ✅ Confirmed |
+| GAN 356i 3 | ✅ Yes | ✅ Confirmed |
+| GAN 356i Carry E | ❌ No | ✅ Confirmed |
+| GAN 356i Carry 2 | ❌ No | ✅ Confirmed (no gyro hardware) |
+| GAN 14 ui FreePlay | ❓ | 🧪 Needs testing |
+| GAN 12 ui | ✅ Yes | 🧪 Needs testing |
+| GAN 12 ui Maglev | ✅ Yes | 🧪 Needs testing |
+| GAN 356i Carry S | ✅ Yes | 🧪 Needs testing |
+| GAN 356i Carry | ✅ Yes | 🧪 Needs testing |
+| GAN Mini ui FreePlay | ✅ Yes | 🧪 Needs testing |
+| Monster Go 3Ai | ✅ Yes | 🧪 Needs testing |
 
 ### 🧪 MoYu (Experimental)
-| Cube | Gyro Support |
-|------|--------------|
-| WeiLong V10 AI | ❌ No |
+
+| Cube | Gyro | Status |
+|------|------|--------|
+| WeiLong V10 AI | ✅ Yes | 🧪 Needs testing |
+| MoYu AI 2023 | ❌ No | 🧪 Needs testing |
 
 ### 🧪 QiYi (Experimental)
-| Cube | Gyro Support |
-|------|--------------|
-| AI Smart Cube | ❌ No |
+
+| Cube | Gyro | Status |
+|------|------|--------|
+| QiYi QY-SC-S | ❌ No | ✅ Confirmed |
+| QiYi AI Smart Cube | ❌ No | 🧪 Needs testing |
 
 ### 🧪 GiiKER (Experimental)
-| Cube | Gyro Support |
-|------|--------------|
-| i3S | ❌ No |
-| i2 | ❌ No |
 
-> **Experimental cubes are being actively tested.** If you own a MoYu, QiYi, or GiiKER smart cube, help us improve support by reporting issues on our [Discord](https://discord.gg/XPQr4wpQVg).
+| Cube | Gyro | Status |
+|------|------|--------|
+| GiiKER i3S | ❌ No | 🧪 Needs testing |
+| GiiKER i2 | ❌ No | 🧪 Needs testing |
+| Xiaomi Giiker | ❌ No | 🧪 Needs testing |
+
+> **Help us test!** If you own a smart cube marked as "Needs testing", please report your experience on our [Discord](https://discord.gg/XPQr4wpQVg).
 
 ---
 

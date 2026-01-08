@@ -71,13 +71,22 @@ export interface AdapterConnectOptions {
   macAddressProvider?: (isFallbackCall: boolean) => Promise<string | null>
 }
 
+export type ModelStatus = 'confirmed' | 'untested'
+
+export interface CubeModelInfo {
+  name: string
+  hasGyro: boolean
+  status: ModelStatus
+  note?: string
+}
+
 export interface CubeBrandInfo {
   brand: CubeBrand
   displayName: string
   experimental: boolean
   hasGyro: boolean
   description: string
-  supportedModels: string[]
+  supportedModels: CubeModelInfo[]
 }
 
 export const CUBE_BRANDS: CubeBrandInfo[] = [
@@ -88,25 +97,29 @@ export const CUBE_BRANDS: CubeBrandInfo[] = [
     hasGyro: true,
     description: 'Full support with gyroscope for replays',
     supportedModels: [
-      'GAN 14 ui FreePlay',
-      'GAN 12 ui FreePlay',
-      'GAN 12 ui',
-      'GAN 12 ui Maglev',
-      'GAN 356i Carry 2',
-      'GAN 356i Carry S',
-      'GAN 356i Carry',
-      'GAN 356i 3',
-      'GAN Mini ui FreePlay',
-      'Monster Go 3Ai',
+      { name: 'GAN 12 ui FreePlay', hasGyro: true, status: 'confirmed' },
+      { name: 'GAN 356i 3', hasGyro: true, status: 'confirmed' },
+      { name: 'GAN 356i Carry E', hasGyro: false, status: 'confirmed', note: 'No gyro hardware' },
+      { name: 'GAN 356i Carry 2', hasGyro: false, status: 'confirmed', note: 'No gyro hardware (Gen3)' },
+      { name: 'GAN 14 ui FreePlay', hasGyro: false, status: 'untested', note: 'Gyro unconfirmed' },
+      { name: 'GAN 12 ui', hasGyro: true, status: 'untested' },
+      { name: 'GAN 12 ui Maglev', hasGyro: true, status: 'untested' },
+      { name: 'GAN 356i Carry S', hasGyro: true, status: 'untested' },
+      { name: 'GAN 356i Carry', hasGyro: true, status: 'untested' },
+      { name: 'GAN Mini ui FreePlay', hasGyro: true, status: 'untested' },
+      { name: 'Monster Go 3Ai', hasGyro: true, status: 'untested' },
     ],
   },
   {
     brand: 'moyu',
     displayName: 'MoYu',
     experimental: true,
-    hasGyro: false,
-    description: 'Move tracking only, no gyroscope',
-    supportedModels: ['MoYu AI 2023', 'MoYu WeiLong V10 AI'],
+    hasGyro: true,
+    description: 'Full support with gyroscope (V10 AI)',
+    supportedModels: [
+      { name: 'MoYu WeiLong V10 AI', hasGyro: true, status: 'untested', note: 'Gyro supported' },
+      { name: 'MoYu AI 2023', hasGyro: false, status: 'untested', note: 'Uses GAN Gen2 protocol' },
+    ],
   },
   {
     brand: 'qiyi',
@@ -114,7 +127,10 @@ export const CUBE_BRANDS: CubeBrandInfo[] = [
     experimental: true,
     hasGyro: false,
     description: 'Move tracking only, no gyroscope',
-    supportedModels: ['QiYi AI Smart Cube'],
+    supportedModels: [
+      { name: 'QiYi QY-SC-S', hasGyro: false, status: 'confirmed' },
+      { name: 'QiYi AI Smart Cube', hasGyro: false, status: 'untested' },
+    ],
   },
   {
     brand: 'giiker',
@@ -122,7 +138,11 @@ export const CUBE_BRANDS: CubeBrandInfo[] = [
     experimental: true,
     hasGyro: false,
     description: 'Move tracking only, no gyroscope',
-    supportedModels: ['GiiKER i3S', 'GiiKER i2', 'Xiaomi Giiker'],
+    supportedModels: [
+      { name: 'GiiKER i3S', hasGyro: false, status: 'untested' },
+      { name: 'GiiKER i2', hasGyro: false, status: 'untested' },
+      { name: 'Xiaomi Giiker', hasGyro: false, status: 'untested' },
+    ],
   },
   {
     brand: 'mock',
@@ -130,7 +150,7 @@ export const CUBE_BRANDS: CubeBrandInfo[] = [
     experimental: true,
     hasGyro: true,
     description: 'Simulated cube for development testing',
-    supportedModels: ['Virtual Cube'],
+    supportedModels: [{ name: 'Virtual Cube', hasGyro: true, status: 'confirmed' }],
   },
 ]
 

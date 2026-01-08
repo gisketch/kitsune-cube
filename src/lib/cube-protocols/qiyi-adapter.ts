@@ -28,7 +28,20 @@ export class QiyiAdapter extends BaseAdapter {
       : undefined
 
     this.connection = await connectSmartCube(macAddressProvider)
-    this._deviceName = this.connection.device.name ?? 'QiYi Cube'
+
+    const deviceName = this.connection.device.name ?? ''
+    const isMoyuCube = deviceName.startsWith('WCU') || deviceName.includes('MoYu')
+
+    if (isMoyuCube) {
+      await this.connection.commands.disconnect()
+      this.connection = null
+      throw new Error(
+        `Connected device "${deviceName}" is a MoYu cube, not a QiYi cube. ` +
+          `Please use the MoYu option instead. Connecting MoYu cubes via QiYi will disable their gyroscope.`
+      )
+    }
+
+    this._deviceName = deviceName || 'QiYi Cube'
     this._isConnected = true
 
     this.connection.events.moves.subscribe({

@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.5',
+    date: '2026-01-08',
+    title: 'Smart Cube Fixes 🧊',
+    icon: 'zap',
+    changes: [
+      { type: 'fix', text: 'MoYu V10 AI now has gyroscope support enabled', contributor: 'chribot' },
+      { type: 'fix', text: 'MoYu adapter sends REQUEST_GYRO_ENABLE on connect', contributor: 'chribot' },
+      { type: 'fix', text: 'Selecting GAN now only connects to GAN cubes (rejects MoYu/QiYi)' },
+      { type: 'fix', text: 'Selecting QiYi now rejects MoYu cubes to prevent gyro being disabled' },
+      { type: 'improvement', text: 'Cube picker shows confirmed vs untested status per model' },
+      { type: 'improvement', text: 'Model-specific gyro notes (e.g., Carry 2 has no gyro hardware)' },
+    ],
+  },
+  {
     version: '0.1.4',
     date: '2026-01-06',
     title: 'Move Counting & Copy 📋',

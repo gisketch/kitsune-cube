@@ -34,7 +34,7 @@ describe('Cube Protocol Types', () => {
       expect(ganBrand?.hasGyro).toBe(true)
 
       const moyuBrand = CUBE_BRANDS.find((b) => b.brand === 'moyu')
-      expect(moyuBrand?.hasGyro).toBe(false)
+      expect(moyuBrand?.hasGyro).toBe(true)
 
       const qiyiBrand = CUBE_BRANDS.find((b) => b.brand === 'qiyi')
       expect(qiyiBrand?.hasGyro).toBe(false)
@@ -198,7 +198,7 @@ describe('MoYu Adapter Configuration', () => {
 
     expect(adapter.brand).toBe('moyu')
     expect(adapter.isExperimental).toBe(true)
-    expect(adapter.capabilities.gyroscope).toBe(false)
+    expect(adapter.capabilities.gyroscope).toBe(true)
     expect(adapter.capabilities.battery).toBe(true)
   })
 })

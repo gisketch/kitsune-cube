@@ -16,7 +16,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     question: 'Which smart cubes are supported?',
     answer:
-      'We support most popular smart cubes including GAN (12 UI, 356i V3, 356i Carry, 356i Play), MoYu (AI series), QiYi, and GiiKER cubes. GAN cubes have full support including gyroscope features, while other brands are in active development. You can also use the app without a smart cube using the manual timer mode.',
+      'We support GAN cubes (12 ui FreePlay, 356i 3, 356i Carry series), MoYu (WeiLong V10 AI with gyro support), QiYi (QY-SC-S confirmed), and GiiKER cubes. GAN and MoYu V10 cubes have gyroscope support for replays. Note: GAN 356i Carry 2 and Carry E do not have gyro hardware. Check our GitHub for the full tested cube list.',
   },
   {
     question: 'Do I need a smart cube to use Kitsune Cube?',
