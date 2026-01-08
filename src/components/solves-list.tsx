@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react'
-import { Trash2, BarChart3, Play, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useState, useCallback } from 'react'
+import { Trash2, BarChart3, Play, ChevronLeft, ChevronRight, Star, ArrowUpDown, Trophy } from 'lucide-react'
 import type { Solve } from '@/hooks/useSolves'
 import { ConfirmDeleteModal } from '@/components/confirm-delete-modal'
 import { createSolvedCube, applyMove, COLOR_HEX, type CubeFaces } from '@/lib/cube-faces'
-
-const ITEMS_PER_PAGE = 50
+import { useSettings } from '@/hooks/useSettings'
+import { useToast } from '@/contexts/ToastContext'
 
 interface SolvesListProps {
   solves: Solve[]
   onDelete?: (id: string) => void
   onViewDetails?: (solve: Solve) => void
+  onToggleFavorite?: (id: string, isFavorite: boolean) => Promise<void> | void
   hideStats?: boolean
+  maxFavorites?: number
 }
 
 function formatTime(ms: number): string {
@@ -165,13 +167,26 @@ function SolveRow({
   total,
   onDelete,
   onViewDetails,
+  onToggleFavorite,
+  isBest,
+  canFavorite,
+  onFavoriteSuccess,
 }: {
   solve: Solve
   index: number
   total: number
   onDelete?: (id: string) => void
   onViewDetails?: (solve: Solve) => void
+  onToggleFavorite?: (id: string, isFavorite: boolean) => Promise<void> | void
+  isBest?: boolean
+  canFavorite?: boolean
+  onFavoriteSuccess?: (message: string) => void
 }) {
+  const [optimisticFavorite, setOptimisticFavorite] = useState<boolean | null>(null)
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false)
+  
+  const isFavorite = optimisticFavorite ?? solve.isFavorite
+  
   const scrambledState = useMemo(() => getScrambledState(solve.scramble), [solve.scramble])
   const solveNumber = total - index
 
@@ -181,27 +196,62 @@ function SolveRow({
     }
   }
 
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!onToggleFavorite) return
+    if (!isFavorite && !canFavorite) return
+    if (isTogglingFavorite) return
+
+    const newFavoriteState = !isFavorite
+    setOptimisticFavorite(newFavoriteState)
+    setIsTogglingFavorite(true)
+
+    try {
+      await onToggleFavorite(solve.id, newFavoriteState)
+      onFavoriteSuccess?.(newFavoriteState ? 'Added to favorites ⭐' : 'Removed from favorites')
+    } catch {
+      setOptimisticFavorite(null)
+      onFavoriteSuccess?.('Failed to update favorite')
+    } finally {
+      setIsTogglingFavorite(false)
+      setOptimisticFavorite(null)
+    }
+  }, [onToggleFavorite, isFavorite, canFavorite, isTogglingFavorite, solve.id, onFavoriteSuccess])
+
+  const getRowStyle = () => {
+    if (isBest) return { backgroundColor: 'rgba(var(--theme-accent-rgb, 255, 165, 0), 0.15)', borderLeft: '3px solid var(--theme-accent)' }
+    if (isFavorite) return { backgroundColor: 'rgba(255, 215, 0, 0.1)', borderLeft: '3px solid #ffd700' }
+    return {}
+  }
+
   return (
     <tr
       className="cursor-pointer transition-colors"
-      style={{ borderBottom: '1px solid var(--theme-subAlt)' }}
+      style={{ borderBottom: '1px solid var(--theme-subAlt)', ...getRowStyle() }}
       onClick={handleRowClick}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--theme-bgSecondary)'
+        if (!isBest && !isFavorite) {
+          e.currentTarget.style.backgroundColor = 'var(--theme-bgSecondary)'
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent'
+        if (!isBest && !isFavorite) {
+          e.currentTarget.style.backgroundColor = 'transparent'
+        }
       }}
     >
       <td className="px-3 py-3 text-center" style={{ color: 'var(--theme-sub)', width: 50 }}>
-        <span className="text-sm font-medium">#{solveNumber}</span>
+        <div className="flex items-center justify-center gap-1">
+          {isBest && <Trophy className="h-3 w-3" style={{ color: 'var(--theme-accent)' }} />}
+          <span className="text-sm font-medium">#{solveNumber}</span>
+        </div>
       </td>
       <td className="px-3 py-3" style={{ width: 45 }}>
         <MiniFace face={scrambledState.F} />
       </td>
       <td className="px-4 py-3" style={{ width: 100 }}>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-lg font-semibold" style={{ color: 'var(--theme-text)' }}>
+          <span className="font-mono text-lg font-semibold" style={{ color: isBest ? 'var(--theme-accent)' : 'var(--theme-text)' }}>
             {formatTime(solve.time)}
           </span>
           {solve.isManual && (
@@ -227,8 +277,24 @@ function SolveRow({
           {solve.scramble}
         </span>
       </td>
-      <td className="px-3 py-3 text-right" style={{ width: 120 }}>
+      <td className="px-3 py-3 text-right" style={{ width: 140 }}>
         <div className="flex items-center justify-end gap-1">
+          {onToggleFavorite && (
+            <button
+              onClick={handleFavoriteClick}
+              disabled={isTogglingFavorite}
+              className="rounded p-1.5 transition-all hover:opacity-80"
+              style={{ 
+                color: isFavorite ? '#ffd700' : 'var(--theme-sub)',
+                opacity: (!isFavorite && !canFavorite) || isTogglingFavorite ? 0.3 : 1,
+                cursor: !isFavorite && !canFavorite ? 'not-allowed' : 'pointer',
+                transform: isTogglingFavorite ? 'scale(0.9)' : 'scale(1)',
+              }}
+              title={isFavorite ? 'Unfavorite' : canFavorite ? 'Favorite' : 'Max 25 favorites reached'}
+            >
+              <Star className="h-4 w-4" fill={isFavorite ? '#ffd700' : 'none'} />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -272,13 +338,19 @@ function SolveRow({
   )
 }
 
-export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: SolvesListProps) {
+export function SolvesList({ solves, onDelete, onViewDetails, onToggleFavorite, hideStats, maxFavorites = 25 }: SolvesListProps) {
+  const { settings } = useSettings()
+  const { showToast } = useToast()
   const [currentPage, setCurrentPage] = useState(1)
-  const [filters, setFilters] = useState<Set<'manual' | 'verified' | 'repeated'>>(new Set())
+  const [filters, setFilters] = useState<Set<'manual' | 'verified' | 'repeated' | 'favorites'>>(new Set())
+  const [sortBy, setSortBy] = useState<'date' | 'time'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; solveId: string | null }>({ 
     isOpen: false, 
     solveId: null 
   })
+
+  const itemsPerPage = settings.solvesPerPage
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm({ isOpen: true, solveId: id })
@@ -290,7 +362,11 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
     }
   }
 
-  const toggleFilter = (filter: 'manual' | 'verified' | 'repeated') => {
+  const handleFavoriteSuccess = useCallback((message: string) => {
+    showToast(message, message.includes('Failed') ? 'error' : 'success')
+  }, [showToast])
+
+  const toggleFilter = (filter: 'manual' | 'verified' | 'repeated' | 'favorites') => {
     setFilters(prev => {
       const next = new Set(prev)
       if (next.has(filter)) {
@@ -303,22 +379,65 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
     setCurrentPage(1)
   }
 
-  const filteredSolves = useMemo(() => {
-    if (filters.size === 0) return solves
-    return solves.filter(s => {
-      if (filters.has('manual') && s.isManual) return true
-      if (filters.has('verified') && !s.isManual) return true
-      if (filters.has('repeated') && s.isRepeatedScramble) return true
-      return false
-    })
-  }, [solves, filters])
+  const toggleSort = () => {
+    if (sortBy === 'date') {
+      setSortBy('time')
+      setSortOrder('asc')
+    } else if (sortBy === 'time' && sortOrder === 'asc') {
+      setSortOrder('desc')
+    } else {
+      setSortBy('date')
+      setSortOrder('desc')
+    }
+    setCurrentPage(1)
+  }
 
-  const totalPages = Math.ceil(filteredSolves.length / ITEMS_PER_PAGE)
+  const bestSolveId = useMemo(() => {
+    const validSolves = solves.filter(s => !s.dnf)
+    if (validSolves.length === 0) return null
+    const best = validSolves.reduce((min, s) => (s.time < min.time ? s : min), validSolves[0])
+    return best.id
+  }, [solves])
+
+  const favoriteCount = useMemo(() => solves.filter(s => s.isFavorite).length, [solves])
+  const canFavorite = favoriteCount < maxFavorites
+
+  const filteredAndSortedSolves = useMemo(() => {
+    let result = solves
+    
+    if (filters.size > 0) {
+      result = result.filter(s => {
+        if (filters.has('favorites') && s.isFavorite) return true
+        if (filters.has('manual') && s.isManual) return true
+        if (filters.has('verified') && !s.isManual) return true
+        if (filters.has('repeated') && s.isRepeatedScramble) return true
+        return false
+      })
+    }
+
+    if (sortBy === 'time') {
+      result = [...result].sort((a, b) => {
+        const timeA = a.dnf ? Infinity : (a.plusTwo ? a.time + 2000 : a.time)
+        const timeB = b.dnf ? Infinity : (b.plusTwo ? b.time + 2000 : b.time)
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA
+      })
+    } else {
+      result = [...result].sort((a, b) => {
+        const dateA = new Date(a.date).getTime()
+        const dateB = new Date(b.date).getTime()
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+      })
+    }
+
+    return result
+  }, [solves, filters, sortBy, sortOrder])
+
+  const totalPages = Math.ceil(filteredAndSortedSolves.length / itemsPerPage)
   
   const paginatedSolves = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filteredSolves.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredSolves, currentPage])
+    const start = (currentPage - 1) * itemsPerPage
+    return filteredAndSortedSolves.slice(start, start + itemsPerPage)
+  }, [filteredAndSortedSolves, currentPage, itemsPerPage])
 
   if (solves.length === 0) {
     return (
@@ -332,9 +451,10 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
     )
   }
 
-  const pageStartIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const pageStartIndex = (currentPage - 1) * itemsPerPage
 
-  const filterButtons: Array<{ key: 'manual' | 'verified' | 'repeated'; label: string }> = [
+  const filterButtons: Array<{ key: 'manual' | 'verified' | 'repeated' | 'favorites'; label: string; icon?: React.ReactNode }> = [
+    { key: 'favorites', label: 'Favorites', icon: <Star className="h-3 w-3" /> },
     { key: 'verified', label: 'Verified' },
     { key: 'manual', label: 'Manual' },
     { key: 'repeated', label: 'Repeated' },
@@ -344,7 +464,7 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
     <div>
       {!hideStats && <StatsHeader solves={solves} />}
       
-      <div className="flex flex-wrap gap-1.5 mb-3">
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
         <button
           onClick={() => setFilters(new Set())}
           className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
@@ -355,22 +475,35 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
         >
           All
         </button>
-        {filterButtons.map(({ key, label }) => (
+        {filterButtons.map(({ key, label, icon }) => (
           <button
             key={key}
             onClick={() => toggleFilter(key)}
-            className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+            className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors"
             style={{
-              backgroundColor: filters.has(key) ? 'var(--theme-accent)' : 'var(--theme-subAlt)',
+              backgroundColor: filters.has(key) ? (key === 'favorites' ? '#ffd700' : 'var(--theme-accent)') : 'var(--theme-subAlt)',
               color: filters.has(key) ? 'var(--theme-bg)' : 'var(--theme-sub)',
             }}
           >
+            {icon}
             {label}
           </button>
         ))}
+        <div className="mx-2 h-4 w-px" style={{ backgroundColor: 'var(--theme-subAlt)' }} />
+        <button
+          onClick={toggleSort}
+          className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors"
+          style={{
+            backgroundColor: sortBy === 'time' ? 'var(--theme-accent)' : 'var(--theme-subAlt)',
+            color: sortBy === 'time' ? 'var(--theme-bg)' : 'var(--theme-sub)',
+          }}
+        >
+          <ArrowUpDown className="h-3 w-3" />
+          {sortBy === 'date' ? 'Recent' : sortOrder === 'asc' ? 'Fastest' : 'Slowest'}
+        </button>
         {filters.size > 0 && (
           <span className="flex items-center text-xs px-2" style={{ color: 'var(--theme-sub)' }}>
-            ({filteredSolves.length})
+            ({filteredAndSortedSolves.length})
           </span>
         )}
       </div>
@@ -403,7 +536,7 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
               </th>
               <th
                 className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--theme-sub)', width: 120 }}
+                style={{ color: 'var(--theme-sub)', width: 140 }}
               >
                 Actions
               </th>
@@ -415,9 +548,13 @@ export function SolvesList({ solves, onDelete, onViewDetails, hideStats }: Solve
                 key={solve.id}
                 solve={solve}
                 index={pageStartIndex + index}
-                total={filteredSolves.length}
+                total={filteredAndSortedSolves.length}
                 onDelete={onDelete ? handleDeleteClick : undefined}
                 onViewDetails={onViewDetails}
+                onToggleFavorite={onToggleFavorite}
+                isBest={solve.id === bestSolveId}
+                canFavorite={canFavorite}
+                onFavoriteSuccess={handleFavoriteSuccess}
               />
             ))}
           </tbody>

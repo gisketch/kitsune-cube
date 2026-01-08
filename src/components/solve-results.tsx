@@ -72,6 +72,8 @@ interface SolveResultsProps {
   solveId?: string
   isOwner?: boolean
   userId?: string
+  effectiveGoals?: { cross?: PhaseGoal; f2l?: PhaseGoal; oll?: PhaseGoal; pll?: PhaseGoal }
+  effectiveTotalTime?: number | null
 }
 
 interface PhaseMarker {
@@ -787,6 +789,8 @@ export function SolveResults({
   solveId,
   isOwner = true,
   userId,
+  effectiveGoals,
+  effectiveTotalTime,
 }: SolveResultsProps) {
   const [isReplayMode, setIsReplayMode] = useState(false)
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1)
@@ -809,8 +813,10 @@ export function SolveResults({
   const { goals: userGoals, totalTime: userTotalTimeGoal } = useGoals()
   const { showToast } = useToast()
 
-  const goals = isOwner ? userGoals : { cross: undefined, f2l: undefined, oll: undefined, pll: undefined }
-  const totalTimeGoal = isOwner ? userTotalTimeGoal : null
+  const goals = isOwner 
+    ? (effectiveGoals ?? userGoals)
+    : { cross: undefined, f2l: undefined, oll: undefined, pll: undefined }
+  const totalTimeGoal = isOwner ? (effectiveTotalTime ?? userTotalTimeGoal) : null
 
   const handleShare = useCallback(async () => {
     const id = solveId || solve?.id

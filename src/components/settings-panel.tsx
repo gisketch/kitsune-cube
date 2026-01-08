@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Upload, Loader2, Cloud, CloudOff } from 'lucide-react'
-import { useSettings } from '@/hooks/useSettings'
+import { Upload, Loader2, Cloud, CloudOff, List } from 'lucide-react'
+import { useSettings, type SolvesPerPage } from '@/hooks/useSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { themes, themeKeys, getCubeColors, type CubeTheme } from '@/lib/themes'
 
@@ -14,6 +14,8 @@ const cubeThemeOptions: { value: CubeTheme; label: string }[] = [
   { value: 'standard', label: 'Standard (Competition)' },
   ...themeKeys.map((key) => ({ value: key as CubeTheme, label: themes[key].name })),
 ]
+
+const SOLVES_PER_PAGE_OPTIONS: SolvesPerPage[] = [10, 20, 50, 100]
 
 export function SettingsPanel({ onMigrateToCloud, isCloudSync }: SettingsPanelProps) {
   const { settings, updateSetting, resetSettings } = useSettings()
@@ -237,6 +239,44 @@ export function SettingsPanel({ onMigrateToCloud, isCloudSync }: SettingsPanelPr
             <div className="text-xs" style={{ color: 'var(--theme-sub)' }}>
               How long you need to hold spacebar/screen before the timer is ready to start.
               Lower values mean faster starts but may cause accidental triggers.
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--theme-bgSecondary)' }}>
+          <h3
+            className="mb-4 text-sm font-medium uppercase tracking-wider"
+            style={{ color: 'var(--theme-sub)' }}
+          >
+            Solve History
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <List className="h-4 w-4" style={{ color: 'var(--theme-accent)' }} />
+                <span className="text-sm" style={{ color: 'var(--theme-text)' }}>
+                  Solves Per Page
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {SOLVES_PER_PAGE_OPTIONS.map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => updateSetting('solvesPerPage', count)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: settings.solvesPerPage === count ? 'var(--theme-accent)' : 'var(--theme-subAlt)',
+                      color: settings.solvesPerPage === count ? 'var(--theme-bg)' : 'var(--theme-sub)',
+                    }}
+                  >
+                    {count}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs" style={{ color: 'var(--theme-sub)' }}>
+                Number of solves shown per page in your solve history. Lower values load faster.
+              </p>
             </div>
           </div>
         </div>

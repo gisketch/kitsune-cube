@@ -28,6 +28,7 @@ export interface Solve {
   moveTimings?: MoveFrame[]
   isManual?: boolean
   isRepeatedScramble?: boolean
+  isFavorite?: boolean
 }
 
 export interface AppSettings {

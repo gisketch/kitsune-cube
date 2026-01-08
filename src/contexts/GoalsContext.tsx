@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   type CFOPGoals,
   type GoalCheckResult,
+  type AverageGoalType,
   DEFAULT_GOALS,
   GOAL_PRESETS,
 } from '@/types/goals'
@@ -15,8 +16,9 @@ interface GoalsContextType {
   goals: CFOPGoals
   preset: string | null
   totalTime: number | null
+  averageGoalType: AverageGoalType
   loading: boolean
-  setGoals: (goals: CFOPGoals, preset?: string | null, totalTime?: number | null) => Promise<void>
+  setGoals: (goals: CFOPGoals, preset?: string | null, totalTime?: number | null, averageGoalType?: AverageGoalType) => Promise<void>
   applyPreset: (presetName: string) => Promise<void>
   checkPhaseGoal: (phase: keyof CFOPGoals, moves: number, time: number) => GoalCheckResult
   checkTotalTimeGoal: (time: number) => boolean
@@ -24,7 +26,7 @@ interface GoalsContextType {
 
 const GoalsContext = createContext<GoalsContextType | null>(null)
 
-function loadLocalGoals(): { goals: CFOPGoals; preset: string | null; totalTime: number | null } {
+function loadLocalGoals(): { goals: CFOPGoals; preset: string | null; totalTime: number | null; averageGoalType: AverageGoalType } {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
@@ -33,17 +35,18 @@ function loadLocalGoals(): { goals: CFOPGoals; preset: string | null; totalTime:
         goals: parsed.goals || DEFAULT_GOALS, 
         preset: parsed.preset || null,
         totalTime: parsed.totalTime ?? null,
+        averageGoalType: parsed.averageGoalType || 'fixed',
       }
     }
   } catch {
     console.error('Failed to load goals from localStorage')
   }
-  return { goals: DEFAULT_GOALS, preset: 'intermediate', totalTime: null }
+  return { goals: DEFAULT_GOALS, preset: 'intermediate', totalTime: null, averageGoalType: 'fixed' }
 }
 
-function saveLocalGoals(goals: CFOPGoals, preset: string | null, totalTime: number | null) {
+function saveLocalGoals(goals: CFOPGoals, preset: string | null, totalTime: number | null, averageGoalType: AverageGoalType) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ goals, preset, totalTime }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ goals, preset, totalTime, averageGoalType }))
   } catch {
     console.error('Failed to save goals to localStorage')
   }
@@ -54,6 +57,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   const [goals, setGoalsState] = useState<CFOPGoals>(DEFAULT_GOALS)
   const [preset, setPreset] = useState<string | null>('intermediate')
   const [totalTime, setTotalTime] = useState<number | null>(null)
+  const [averageGoalType, setAverageGoalType] = useState<AverageGoalType>('fixed')
   const [loading, setLoading] = useState(true)
 
   const isGuest = isOfflineMode || !user || !db
@@ -64,6 +68,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
       setGoalsState(local.goals)
       setPreset(local.preset)
       setTotalTime(local.totalTime)
+      setAverageGoalType(local.averageGoalType)
       setLoading(false)
       return
     }
@@ -79,6 +84,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
             setGoalsState(data.cfopGoals.goals || DEFAULT_GOALS)
             setPreset(data.cfopGoals.preset || null)
             setTotalTime(data.cfopGoals.totalTime ?? null)
+            setAverageGoalType(data.cfopGoals.averageGoalType || 'fixed')
           }
         }
         setLoading(false)
@@ -93,24 +99,25 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
   }, [user, isGuest])
 
   const setGoals = useCallback(
-    async (newGoals: CFOPGoals, newPreset: string | null = null, newTotalTime: number | null = null) => {
+    async (newGoals: CFOPGoals, newPreset: string | null = null, newTotalTime: number | null = null, newAverageGoalType: AverageGoalType = 'fixed') => {
       setGoalsState(newGoals)
       setPreset(newPreset)
       setTotalTime(newTotalTime)
+      setAverageGoalType(newAverageGoalType)
 
       if (isGuest) {
-        saveLocalGoals(newGoals, newPreset, newTotalTime)
+        saveLocalGoals(newGoals, newPreset, newTotalTime, newAverageGoalType)
         return
       }
 
       try {
         const userDocRef = doc(db!, 'users', user!.uid)
         await updateDoc(userDocRef, {
-          cfopGoals: { goals: newGoals, preset: newPreset, totalTime: newTotalTime },
+          cfopGoals: { goals: newGoals, preset: newPreset, totalTime: newTotalTime, averageGoalType: newAverageGoalType },
         })
       } catch (error) {
         console.error('Failed to save goals to Firebase:', error)
-        saveLocalGoals(newGoals, newPreset, newTotalTime)
+        saveLocalGoals(newGoals, newPreset, newTotalTime, newAverageGoalType)
       }
     },
     [user, isGuest]
@@ -154,6 +161,7 @@ export function GoalsProvider({ children }: { children: ReactNode }) {
         goals,
         preset,
         totalTime,
+        averageGoalType,
         loading,
         setGoals,
         applyPreset,

@@ -4,7 +4,9 @@ import { useSolves, fetchPublicSolveWithUser } from '@/hooks/useSolves'
 import { SolveResults } from '@/components/solve-results'
 import { useScrambleTracker } from '@/hooks/useScrambleTracker'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGoals } from '@/contexts/GoalsContext'
 import { useSEO } from '@/lib/seo'
+import { computeDynamicGoals, getEffectiveGoals, getEffectiveTotalTime } from '@/lib/dynamic-goals'
 import type { Solve } from '@/types'
 
 function formatTime(ms: number): string {
@@ -23,12 +25,26 @@ export function SolvePage() {
   const { solves, deleteSolve } = useSolves()
   const { setScramble } = useScrambleTracker()
   const { user } = useAuth()
+  const { goals: fixedGoals, totalTime: fixedTotalTime, averageGoalType } = useGoals()
   const [publicSolve, setPublicSolve] = useState<Solve | null>(null)
   const [publicUserInfo, setPublicUserInfo] = useState<{ name?: string; avatar?: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   const localSolve = solves.find((s) => s.id === solveId)
   const solve = localSolve || publicSolve
+
+  const dynamicGoals = useMemo(
+    () => computeDynamicGoals(solves, averageGoalType),
+    [solves, averageGoalType]
+  )
+  const effectiveGoals = useMemo(
+    () => getEffectiveGoals(fixedGoals, dynamicGoals),
+    [fixedGoals, dynamicGoals]
+  )
+  const effectiveTotalTime = useMemo(
+    () => getEffectiveTotalTime(fixedTotalTime, dynamicGoals),
+    [fixedTotalTime, dynamicGoals]
+  )
 
   const ogImageUrl = useMemo(() => {
     if (!solve) return undefined
@@ -126,6 +142,8 @@ export function SolvePage() {
       solveId={solveId}
       isOwner={!!localSolve}
       userId={localSolve ? user?.uid : userId}
+      effectiveGoals={effectiveGoals}
+      effectiveTotalTime={effectiveTotalTime}
     />
   )
 }

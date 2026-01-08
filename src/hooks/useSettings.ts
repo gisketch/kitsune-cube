@@ -3,6 +3,7 @@ import { applyTheme, type CubeTheme } from '@/lib/themes'
 
 export type InspectionTime = 'none' | '15' | '30' | '60' | 'custom'
 export type TimerLayoutMode = 'minimal' | 'detailed'
+export type SolvesPerPage = 10 | 20 | 50 | 100
 
 export interface AppSettings {
   animationSpeed: number
@@ -14,6 +15,7 @@ export interface AppSettings {
   holdThreshold: number
   timerLayoutMode: TimerLayoutMode
   showStatsWidget: boolean
+  solvesPerPage: SolvesPerPage
 }
 
 const STORAGE_KEY = 'cube-settings'
@@ -28,6 +30,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   holdThreshold: 300,
   timerLayoutMode: 'detailed',
   showStatsWidget: true,
+  solvesPerPage: 20,
 }
 
 function loadSettings(): AppSettings {

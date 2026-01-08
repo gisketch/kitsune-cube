@@ -31,6 +31,7 @@ import { useSettings } from '@/hooks/useSettings'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSolveSession } from '@/contexts/SolveSessionContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
+import { useGoals } from '@/contexts/GoalsContext'
 import { BrandPickerModal, SmartCubeConnectionModal } from '@/components/brand-picker-modal'
 import { CalibrationModal } from '@/components/calibration-modal'
 import { CubeInfoModal } from '@/components/cube-info-modal'
@@ -39,6 +40,7 @@ import { generateScramble, SOLVED_FACELETS } from '@/lib/cube-state'
 import { setCubeColors } from '@/lib/cube-state'
 import { setCubeFaceColors } from '@/lib/cube-faces'
 import { getCubeColors } from '@/lib/themes'
+import { computeDynamicGoals, getEffectiveGoals, getEffectiveTotalTime } from '@/lib/dynamic-goals'
 import { db, isOfflineMode } from '@/lib/firebase'
 import { DEFAULT_CONFIG } from '@/config/scene-config'
 import type { CubeBrand } from '@/lib/cube-protocols'
@@ -125,10 +127,24 @@ function App() {
     resetSolveSession,
   } = useSolveSession()
 
-  const { solves, deleteSolve: rawDeleteSolve, migrateLocalToCloud, isCloudSync } = useSolves()
+  const { solves, deleteSolve: rawDeleteSolve, toggleFavorite, migrateLocalToCloud, isCloudSync } = useSolves()
   const { recalculateStats } = useAchievements()
   const { settings, updateSetting } = useSettings()
   const { user } = useAuth()
+  const { goals: fixedGoals, totalTime: fixedTotalTime, averageGoalType } = useGoals()
+
+  const dynamicGoals = useMemo(
+    () => computeDynamicGoals(solves, averageGoalType),
+    [solves, averageGoalType]
+  )
+  const effectiveGoals = useMemo(
+    () => getEffectiveGoals(fixedGoals, dynamicGoals),
+    [fixedGoals, dynamicGoals]
+  )
+  const effectiveTotalTime = useMemo(
+    () => getEffectiveTotalTime(fixedTotalTime, dynamicGoals),
+    [fixedTotalTime, dynamicGoals]
+  )
 
   const [savedMacAddress, setSavedMacAddress] = useState<string | null>(null)
 
@@ -623,6 +639,8 @@ function App() {
                           solve={solves.length > 0 ? solves[0] : undefined}
                           isManual={manualTimerEnabled}
                           userId={user?.uid}
+                          effectiveGoals={effectiveGoals}
+                          effectiveTotalTime={effectiveTotalTime}
                         />
                       ) : (
                         <>
@@ -707,6 +725,8 @@ function App() {
                         solve={solves.length > 0 ? solves[0] : undefined}
                         isManual={manualTimerEnabled}
                         userId={user?.uid}
+                        effectiveGoals={effectiveGoals}
+                        effectiveTotalTime={effectiveTotalTime}
                       />
                     ) : (
                       <>
@@ -790,6 +810,8 @@ function App() {
                       solve={solves.length > 0 ? solves[0] : undefined}
                       isManual={manualTimerEnabled}
                       userId={user?.uid}
+                      effectiveGoals={effectiveGoals}
+                      effectiveTotalTime={effectiveTotalTime}
                     />
                   ) : (
                     <>
@@ -844,6 +866,7 @@ function App() {
                 solves={solves}
                 onDeleteSolve={deleteSolve}
                 onViewSolveDetails={(solve) => navigate(user?.uid ? `/app/solve/${user.uid}/${solve.id}` : `/app/solve/${solve.id}`)}
+                onToggleFavorite={toggleFavorite}
               />
             } />
             <Route path="solve/:solveId" element={<SolvePage />} />

@@ -10,11 +10,14 @@ export interface CFOPGoals {
   pll: PhaseGoal
 }
 
+export type AverageGoalType = 'fixed' | 'ao5' | 'ao12' | 'ao50' | 'ao100'
+
 export interface UserGoals {
   method: 'cfop'
   preset: string | null
   goals: CFOPGoals
   totalTime: number | null
+  averageGoalType?: AverageGoalType
 }
 
 export interface GoalCheckResult {

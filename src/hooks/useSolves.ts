@@ -190,6 +190,18 @@ export function useSolves() {
     [user, useLocalStorage]
   )
 
+  const toggleFavorite = useCallback(
+    async (id: string, isFavorite: boolean) => {
+      const favoriteCount = solves.filter(s => s.isFavorite).length
+      if (isFavorite && favoriteCount >= 25) {
+        console.warn('Maximum 25 favorites reached')
+        return
+      }
+      await updateSolve(id, { isFavorite })
+    },
+    [solves, updateSolve]
+  )
+
   const clearAll = useCallback(async () => {
     if (useLocalStorage) {
       setSolves([])
@@ -240,6 +252,7 @@ export function useSolves() {
     addSolve,
     deleteSolve,
     updateSolve,
+    toggleFavorite,
     clearAll,
     getStats,
     migrateLocalToCloud,

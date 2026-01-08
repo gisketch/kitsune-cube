@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.7',
+    date: '2026-01-08',
+    title: 'Goals & Favorites ⭐',
+    description: 'Set goals based on your actual averages, favorite your best solves, and find them faster!',
+    icon: 'sparkles',
+    changes: [
+      { type: 'feature', text: 'Dynamic goals - set targets based on your ao5, ao12, ao50, or ao100' },
+      { type: 'feature', text: 'Favorite solves - star up to 25 of your best solves to find them easily' },
+      { type: 'feature', text: 'Sort solves by time - quickly find your fastest or slowest solves' },
+      { type: 'feature', text: 'Page size setting - choose how many solves to show per page' },
+      { type: 'improvement', text: 'Favorites and personal bests are now highlighted in your solve list' },
+    ],
+  },
+  {
     version: '0.1.6',
     date: '2026-01-08',
     title: 'Faster Loading ⚡',

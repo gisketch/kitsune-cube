@@ -19,6 +19,7 @@ interface AccountPageProps {
   solves: Solve[]
   onDeleteSolve?: (id: string) => void
   onViewSolveDetails?: (solve: Solve) => void
+  onToggleFavorite?: (id: string, isFavorite: boolean) => void
 }
 
 interface TooltipState {
@@ -853,7 +854,7 @@ function ProfileHeader() {
   )
 }
 
-export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: AccountPageProps) {
+export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails, onToggleFavorite }: AccountPageProps) {
   const verifiedSolves = useMemo(() => solves.filter(s => !s.isManual), [solves])
   const hasVerifiedSolves = verifiedSolves.length > 0
   const [verifiedOnly, setVerifiedOnly] = useState(hasVerifiedSolves)
@@ -942,12 +943,13 @@ export function AccountPage({ solves, onDeleteSolve, onViewSolveDetails }: Accou
             solves={solves}
             onDelete={onDeleteSolve}
             onViewDetails={onViewSolveDetails}
+            onToggleFavorite={onToggleFavorite}
             hideStats
           />
         </div>
       </div>
 
-      <SetGoalsModal isOpen={isGoalsModalOpen} onClose={() => setIsGoalsModalOpen(false)} />
+      <SetGoalsModal isOpen={isGoalsModalOpen} onClose={() => setIsGoalsModalOpen(false)} solves={solves} />
     </div>
   )
 }
