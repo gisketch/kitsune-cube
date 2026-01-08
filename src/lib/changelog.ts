@@ -76,8 +76,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Smart Cube Fixes 🧊',
     icon: 'zap',
     changes: [
-      { type: 'fix', text: 'MoYu V10 AI now has gyroscope support enabled', contributor: 'chribot' },
-      { type: 'fix', text: 'MoYu adapter sends REQUEST_GYRO_ENABLE on connect', contributor: 'chribot' },
+      { type: 'fix', text: 'MoYu V10 moves now working (sends REQUEST_HARDWARE + REQUEST_FACELETS)', contributor: 'chribot' },
+      { type: 'fix', text: 'MoYu V10 AI gyroscope support enabled', contributor: 'chribot' },
       { type: 'fix', text: 'Selecting GAN now only connects to GAN cubes (rejects MoYu/QiYi)' },
       { type: 'fix', text: 'Selecting QiYi now rejects MoYu cubes to prevent gyro being disabled' },
       { type: 'improvement', text: 'Cube picker shows confirmed vs untested status per model' },

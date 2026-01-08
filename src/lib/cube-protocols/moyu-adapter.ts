@@ -42,8 +42,6 @@ export class MoyuAdapter extends BaseAdapter {
     this._deviceName = deviceName
     this._isConnected = true
 
-    await this.connection.sendCubeCommand({ type: 'REQUEST_GYRO_ENABLE' })
-
     this.connection.events$.subscribe({
       next: (event) => this.handleEvent(event),
       error: (err) => {
@@ -54,6 +52,10 @@ export class MoyuAdapter extends BaseAdapter {
         this.emitDisconnect()
       },
     })
+
+    await this.connection.sendCubeCommand({ type: 'REQUEST_HARDWARE' })
+    await this.connection.sendCubeCommand({ type: 'REQUEST_FACELETS' })
+    await this.connection.sendCubeCommand({ type: 'REQUEST_GYRO_ENABLE' })
   }
 
   private handleEvent(event: GanCubeEvent): void {

@@ -29,7 +29,7 @@ export default async function handler(request: Request, context: Context) {
   for (const pattern of patterns) {
     const match = url.pathname.match(pattern)
     if (match) {
-      if (pattern.source.includes('/s/')) {
+      if (pattern.source.includes('\\/s\\/')) {
         shortId = match[1]
       } else if (match.length === 3) {
         userId = match[1]
@@ -218,5 +218,5 @@ function escapeHtml(str: string): string {
 }
 
 export const config = {
-  path: ['/solve/*', '/app/solve/*'],
+  path: ['/s/*', '/solve/*', '/app/solve/*'],
 }
