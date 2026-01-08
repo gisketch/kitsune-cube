@@ -17,6 +17,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.9',
+    date: '2026-01-08',
+    title: 'CFOP Analysis Fixes 🔧',
+    description: 'Fixed CFOP breakdown for all cross colors and improved PLL skip detection!',
+    icon: 'zap',
+    changes: [
+      { type: 'fix', text: 'CFOP analysis now works correctly for all cross colors (not just white/yellow)' },
+      { type: 'fix', text: 'F2L slots no longer show as "skipped" when using colored crosses' },
+      { type: 'fix', text: 'PLL skip now correctly detected when only adjusting the final layer' },
+      { type: 'fix', text: 'Cube no longer desyncs when resetting gyro (U4) during a scramble' },
+      { type: 'fix', text: 'Marathon Hand achievement now properly tracks rotation degrees' },
+    ],
+  },
+  {
     version: '0.1.8',
     date: '2026-01-08',
     title: 'Share Your Solves 🔗',

@@ -1,7 +1,7 @@
 {
   "name": "cube",
   "private": true,
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "scripts": {
     "dev": "npx tsx scripts/generate-version.ts && vite",
@@ -10,6 +10,7 @@
     "release:patch": "npx tsx scripts/release.ts patch",
     "deploy": "npm run build && netlify deploy --prod --dir=dist",
     "backfill:shortids": "npx tsx scripts/backfill-short-ids.ts",
+    "reanalyze:cfop": "npx tsx scripts/reanalyze-cfop.ts",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

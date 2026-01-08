@@ -112,72 +112,20 @@ function getF2LSlotConfigs(crossFace: keyof CubeFaces): SlotConfig[] {
   if (crossFace === 'D') {
     return [
       {
-        corner: {
-          pos: [
-            ['D', 0],
-            ['F', 8],
-            ['R', 6],
-          ],
-          colors: (c: CubeFaces) => [c.D[4], c.F[4], c.R[4]],
-        },
-        edge: {
-          pos: [
-            ['F', 5],
-            ['R', 3],
-          ],
-          colors: (c: CubeFaces) => [c.F[4], c.R[4]],
-        },
+        corner: { pos: [['D', 0], ['F', 8], ['R', 6]], colors: (c: CubeFaces) => [c.D[4], c.F[4], c.R[4]] },
+        edge: { pos: [['F', 5], ['R', 3]], colors: (c: CubeFaces) => [c.F[4], c.R[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['D', 2],
-            ['R', 8],
-            ['B', 6],
-          ],
-          colors: (c: CubeFaces) => [c.D[4], c.R[4], c.B[4]],
-        },
-        edge: {
-          pos: [
-            ['R', 5],
-            ['B', 3],
-          ],
-          colors: (c: CubeFaces) => [c.R[4], c.B[4]],
-        },
+        corner: { pos: [['D', 2], ['R', 8], ['B', 6]], colors: (c: CubeFaces) => [c.D[4], c.R[4], c.B[4]] },
+        edge: { pos: [['R', 5], ['B', 3]], colors: (c: CubeFaces) => [c.R[4], c.B[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['D', 8],
-            ['B', 8],
-            ['L', 6],
-          ],
-          colors: (c: CubeFaces) => [c.D[4], c.B[4], c.L[4]],
-        },
-        edge: {
-          pos: [
-            ['B', 5],
-            ['L', 3],
-          ],
-          colors: (c: CubeFaces) => [c.B[4], c.L[4]],
-        },
+        corner: { pos: [['D', 8], ['B', 8], ['L', 6]], colors: (c: CubeFaces) => [c.D[4], c.B[4], c.L[4]] },
+        edge: { pos: [['B', 5], ['L', 3]], colors: (c: CubeFaces) => [c.B[4], c.L[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['D', 6],
-            ['L', 8],
-            ['F', 6],
-          ],
-          colors: (c: CubeFaces) => [c.D[4], c.L[4], c.F[4]],
-        },
-        edge: {
-          pos: [
-            ['L', 5],
-            ['F', 3],
-          ],
-          colors: (c: CubeFaces) => [c.L[4], c.F[4]],
-        },
+        corner: { pos: [['D', 6], ['L', 8], ['F', 6]], colors: (c: CubeFaces) => [c.D[4], c.L[4], c.F[4]] },
+        edge: { pos: [['L', 5], ['F', 3]], colors: (c: CubeFaces) => [c.L[4], c.F[4]] },
       },
     ]
   }
@@ -185,72 +133,104 @@ function getF2LSlotConfigs(crossFace: keyof CubeFaces): SlotConfig[] {
   if (crossFace === 'U') {
     return [
       {
-        corner: {
-          pos: [
-            ['U', 8],
-            ['F', 2],
-            ['R', 0],
-          ],
-          colors: (c: CubeFaces) => [c.U[4], c.F[4], c.R[4]],
-        },
-        edge: {
-          pos: [
-            ['F', 5],
-            ['R', 3],
-          ],
-          colors: (c: CubeFaces) => [c.F[4], c.R[4]],
-        },
+        corner: { pos: [['U', 8], ['F', 2], ['R', 0]], colors: (c: CubeFaces) => [c.U[4], c.F[4], c.R[4]] },
+        edge: { pos: [['F', 5], ['R', 3]], colors: (c: CubeFaces) => [c.F[4], c.R[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['U', 2],
-            ['R', 2],
-            ['B', 0],
-          ],
-          colors: (c: CubeFaces) => [c.U[4], c.R[4], c.B[4]],
-        },
-        edge: {
-          pos: [
-            ['R', 5],
-            ['B', 3],
-          ],
-          colors: (c: CubeFaces) => [c.R[4], c.B[4]],
-        },
+        corner: { pos: [['U', 2], ['R', 2], ['B', 0]], colors: (c: CubeFaces) => [c.U[4], c.R[4], c.B[4]] },
+        edge: { pos: [['R', 5], ['B', 3]], colors: (c: CubeFaces) => [c.R[4], c.B[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['U', 0],
-            ['B', 2],
-            ['L', 0],
-          ],
-          colors: (c: CubeFaces) => [c.U[4], c.B[4], c.L[4]],
-        },
-        edge: {
-          pos: [
-            ['B', 5],
-            ['L', 3],
-          ],
-          colors: (c: CubeFaces) => [c.B[4], c.L[4]],
-        },
+        corner: { pos: [['U', 0], ['B', 2], ['L', 0]], colors: (c: CubeFaces) => [c.U[4], c.B[4], c.L[4]] },
+        edge: { pos: [['B', 5], ['L', 3]], colors: (c: CubeFaces) => [c.B[4], c.L[4]] },
       },
       {
-        corner: {
-          pos: [
-            ['U', 6],
-            ['L', 2],
-            ['F', 0],
-          ],
-          colors: (c: CubeFaces) => [c.U[4], c.L[4], c.F[4]],
-        },
-        edge: {
-          pos: [
-            ['L', 5],
-            ['F', 3],
-          ],
-          colors: (c: CubeFaces) => [c.L[4], c.F[4]],
-        },
+        corner: { pos: [['U', 6], ['L', 2], ['F', 0]], colors: (c: CubeFaces) => [c.U[4], c.L[4], c.F[4]] },
+        edge: { pos: [['L', 5], ['F', 3]], colors: (c: CubeFaces) => [c.L[4], c.F[4]] },
+      },
+    ]
+  }
+
+  if (crossFace === 'F') {
+    return [
+      {
+        corner: { pos: [['F', 2], ['U', 6], ['R', 0]], colors: (c: CubeFaces) => [c.F[4], c.U[4], c.R[4]] },
+        edge: { pos: [['U', 5], ['R', 1]], colors: (c: CubeFaces) => [c.U[4], c.R[4]] },
+      },
+      {
+        corner: { pos: [['F', 8], ['R', 6], ['D', 0]], colors: (c: CubeFaces) => [c.F[4], c.R[4], c.D[4]] },
+        edge: { pos: [['R', 7], ['D', 3]], colors: (c: CubeFaces) => [c.R[4], c.D[4]] },
+      },
+      {
+        corner: { pos: [['F', 6], ['D', 6], ['L', 8]], colors: (c: CubeFaces) => [c.F[4], c.D[4], c.L[4]] },
+        edge: { pos: [['D', 3], ['L', 7]], colors: (c: CubeFaces) => [c.D[4], c.L[4]] },
+      },
+      {
+        corner: { pos: [['F', 0], ['L', 2], ['U', 6]], colors: (c: CubeFaces) => [c.F[4], c.L[4], c.U[4]] },
+        edge: { pos: [['L', 1], ['U', 3]], colors: (c: CubeFaces) => [c.L[4], c.U[4]] },
+      },
+    ]
+  }
+
+  if (crossFace === 'B') {
+    return [
+      {
+        corner: { pos: [['B', 2], ['U', 0], ['L', 0]], colors: (c: CubeFaces) => [c.B[4], c.U[4], c.L[4]] },
+        edge: { pos: [['U', 3], ['L', 1]], colors: (c: CubeFaces) => [c.U[4], c.L[4]] },
+      },
+      {
+        corner: { pos: [['B', 0], ['R', 2], ['U', 2]], colors: (c: CubeFaces) => [c.B[4], c.R[4], c.U[4]] },
+        edge: { pos: [['R', 1], ['U', 5]], colors: (c: CubeFaces) => [c.R[4], c.U[4]] },
+      },
+      {
+        corner: { pos: [['B', 6], ['D', 2], ['R', 8]], colors: (c: CubeFaces) => [c.B[4], c.D[4], c.R[4]] },
+        edge: { pos: [['D', 5], ['R', 7]], colors: (c: CubeFaces) => [c.D[4], c.R[4]] },
+      },
+      {
+        corner: { pos: [['B', 8], ['L', 6], ['D', 8]], colors: (c: CubeFaces) => [c.B[4], c.L[4], c.D[4]] },
+        edge: { pos: [['L', 7], ['D', 3]], colors: (c: CubeFaces) => [c.L[4], c.D[4]] },
+      },
+    ]
+  }
+
+  if (crossFace === 'R') {
+    return [
+      {
+        corner: { pos: [['R', 0], ['F', 2], ['U', 8]], colors: (c: CubeFaces) => [c.R[4], c.F[4], c.U[4]] },
+        edge: { pos: [['F', 1], ['U', 7]], colors: (c: CubeFaces) => [c.F[4], c.U[4]] },
+      },
+      {
+        corner: { pos: [['R', 6], ['D', 0], ['F', 8]], colors: (c: CubeFaces) => [c.R[4], c.D[4], c.F[4]] },
+        edge: { pos: [['D', 1], ['F', 7]], colors: (c: CubeFaces) => [c.D[4], c.F[4]] },
+      },
+      {
+        corner: { pos: [['R', 8], ['B', 6], ['D', 2]], colors: (c: CubeFaces) => [c.R[4], c.B[4], c.D[4]] },
+        edge: { pos: [['B', 7], ['D', 7]], colors: (c: CubeFaces) => [c.B[4], c.D[4]] },
+      },
+      {
+        corner: { pos: [['R', 2], ['U', 2], ['B', 0]], colors: (c: CubeFaces) => [c.R[4], c.U[4], c.B[4]] },
+        edge: { pos: [['U', 1], ['B', 1]], colors: (c: CubeFaces) => [c.U[4], c.B[4]] },
+      },
+    ]
+  }
+
+  if (crossFace === 'L') {
+    return [
+      {
+        corner: { pos: [['L', 2], ['U', 6], ['F', 0]], colors: (c: CubeFaces) => [c.L[4], c.U[4], c.F[4]] },
+        edge: { pos: [['U', 7], ['F', 1]], colors: (c: CubeFaces) => [c.U[4], c.F[4]] },
+      },
+      {
+        corner: { pos: [['L', 0], ['B', 2], ['U', 0]], colors: (c: CubeFaces) => [c.L[4], c.B[4], c.U[4]] },
+        edge: { pos: [['B', 1], ['U', 1]], colors: (c: CubeFaces) => [c.B[4], c.U[4]] },
+      },
+      {
+        corner: { pos: [['L', 6], ['D', 8], ['B', 8]], colors: (c: CubeFaces) => [c.L[4], c.D[4], c.B[4]] },
+        edge: { pos: [['D', 7], ['B', 7]], colors: (c: CubeFaces) => [c.D[4], c.B[4]] },
+      },
+      {
+        corner: { pos: [['L', 8], ['F', 6], ['D', 6]], colors: (c: CubeFaces) => [c.L[4], c.F[4], c.D[4]] },
+        edge: { pos: [['F', 7], ['D', 1]], colors: (c: CubeFaces) => [c.F[4], c.D[4]] },
       },
     ]
   }
@@ -397,6 +377,16 @@ export function analyzeCFOP(moves: string[], stateHistory: CubeFaces[]): CFOPAna
 
   const pllMoves = pllMoveIndex >= 0 ? moves.slice(ollEndIdx + 1, pllMoveIndex + 1) : []
 
+  const isOnlyAUF = (movesToCheck: string[], crossCol: Color): boolean => {
+    if (movesToCheck.length === 0) return true
+    const crossFace = CROSS_COLOR_TO_FACE[crossCol]
+    const aufFace = OPPOSITE_FACE[crossFace]
+    const aufMoves = [aufFace, `${aufFace}'`, `${aufFace}2`]
+    return movesToCheck.every(m => aufMoves.includes(m))
+  }
+
+  const pllSkipped = pllMoves.length === 0 || isOnlyAUF(pllMoves, crossColor)
+
   return {
     crossColor,
     cross: {
@@ -413,7 +403,7 @@ export function analyzeCFOP(moves: string[], stateHistory: CubeFaces[]): CFOPAna
     pll: {
       name: 'PLL',
       moves: pllMoves,
-      skipped: pllMoves.length === 0,
+      skipped: pllSkipped,
     },
   }
 }

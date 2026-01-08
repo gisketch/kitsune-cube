@@ -131,6 +131,7 @@ function PhaseStatCard({
   goal,
   hideRecognition = false,
   crossColor,
+  skipped = false,
 }: {
   label: string
   moves: number
@@ -142,6 +143,7 @@ function PhaseStatCard({
   goal?: PhaseGoal
   hideRecognition?: boolean
   crossColor?: string | null
+  skipped?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
   
@@ -157,11 +159,12 @@ function PhaseStatCard({
 
   const displayValue = displayMode === 'moves' ? moves.toString() : formatDuration(duration)
 
-  const movesMet = goal && moves > 0 ? moves <= goal.moves : null
-  const timeMet = goal && moves > 0 ? duration <= goal.time : null
+  const movesMet = goal && moves > 0 && !skipped ? moves <= goal.moves : null
+  const timeMet = goal && moves > 0 && !skipped ? duration <= goal.time : null
   const goalMet = displayMode === 'moves' ? movesMet : timeMet
 
   const isCrossPhase = label.toLowerCase() === 'cross'
+  const showSkip = skipped || moves === 0
 
   return (
     <motion.div
@@ -184,7 +187,7 @@ function PhaseStatCard({
         </div>
         {isCrossPhase && crossColor && <CrossColorFacelet color={crossColor} />}
       </div>
-      {moves > 0 ? (
+      {!showSkip ? (
         <Tooltip open={isOpen} onOpenChange={setIsOpen}>
           <TooltipTrigger asChild>
             <button
@@ -1783,6 +1786,7 @@ export function SolveResults({
                     executionTime={phaseTimings?.pll.executionTime ?? pllDuration}
                     displayMode={displayMode}
                     goal={goals.pll}
+                    skipped={analysis?.pll.skipped}
                   />
                 </div>
 
@@ -1830,6 +1834,7 @@ export function SolveResults({
                     executionTime={phaseTimings?.pll.executionTime ?? pllDuration}
                     displayMode={displayMode}
                     goal={goals.pll}
+                    skipped={analysis?.pll.skipped}
                   />
                 </div>
               </motion.div>
