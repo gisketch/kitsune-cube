@@ -36,6 +36,7 @@ export function useSolveSession() {
     performMove: trackMove,
     setSolved,
     startSolving,
+    reset: resetScrambleTracker,
   } = useScrambleTracker()
 
   const timer = useTimer()
@@ -52,23 +53,31 @@ export function useSolveSession() {
     applyScramble,
   } = useCubeFaces()
 
-  const { handleCalibration, setActions } = useCalibrationSequence()
+  const { checkSequence, setActions } = useCalibrationSequence()
 
   const handleMove = useCallback(
     (move: string) => {
-      if (handleCalibration(move)) return
-
-      trackMove(move)
       cubeRef.current?.performMove(move)
       updateCubeState(move)
       updateCubeFaces(move)
+      trackMove(move)
+
+      const calibration = checkSequence(move)
+      if (calibration === 'gyro') {
+        setActions({ resetGyro: () => {}, syncCube: () => {} })
+        return
+      }
+      if (calibration === 'cube') {
+        return
+      }
+
       gyroRecorder.recordMove(move)
 
       if (timer.status === 'inspection') {
         timer.startTimer()
       }
     },
-    [trackMove, timer, updateCubeState, updateCubeFaces, gyroRecorder, handleCalibration],
+    [trackMove, timer, updateCubeState, updateCubeFaces, gyroRecorder, checkSequence, setActions],
   )
 
   const smartCube = useSmartCube({ onMove: handleMove })
@@ -175,11 +184,12 @@ export function useSolveSession() {
   const handleSyncCube = useCallback(async () => {
     await resetCubeState()
     resetCubeFaces()
+    resetScrambleTracker()
     const { createSolvedState } = await import('@/lib/cube-state')
     const solved = await createSolvedState()
     setFrozenPattern(solved.pattern)
     setIsCalibrationOpen(false)
-  }, [resetCubeState, resetCubeFaces])
+  }, [resetCubeState, resetCubeFaces, resetScrambleTracker])
 
   const handleRecalibrateGyro = useCallback(() => {
     resetGyro()

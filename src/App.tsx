@@ -345,17 +345,18 @@ function App() {
       const newFacelets = await updateCubeState(move)
       updateCubeFaces(move)
 
+      trackMove(move)
+      syncWithFacelets(newFacelets)
+
       const isTimerActive = timer.status === 'running' || timer.status === 'inspection'
       if (!isTimerActive) {
         const calibration = checkCalibrationSequence(move)
         if (calibration === 'gyro') {
           calibrationActionsRef.current.resetGyro()
-          syncWithFacelets(newFacelets)
           return
         }
         if (calibration === 'cube') {
           calibrationActionsRef.current.syncCube()
-          syncWithFacelets(newFacelets)
           return
         }
         if (calibration === 'scramble' && timer.status === 'stopped') {
@@ -364,8 +365,6 @@ function App() {
         }
       }
 
-      trackMove(move)
-      syncWithFacelets(newFacelets)
       gyroRecorder.recordMove(move)
 
       if (timer.status === 'inspection') {
@@ -474,12 +473,13 @@ function App() {
   const handleSyncCube = useCallback(async () => {
     await resetCubeState()
     resetCubeFaces()
+    syncWithFacelets(SOLVED_FACELETS)
     cubeRef.current?.reset()
     const { createSolvedState } = await import('@/lib/cube-state')
     const solved = await createSolvedState()
     setFrozenPattern(solved.pattern)
     setIsCalibrationOpen(false)
-  }, [resetCubeState, resetCubeFaces])
+  }, [resetCubeState, resetCubeFaces, syncWithFacelets])
 
   const handleRecalibrateGyro = useCallback(() => {
     resetGyro()
