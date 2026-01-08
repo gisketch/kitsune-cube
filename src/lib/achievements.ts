@@ -68,16 +68,17 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: 'marathon-hand',
     name: 'Marathon Hand',
-    description: 'Rotate the cube a marathon distance (42,195 degrees)',
+    description: 'Rotate the cube across many solves',
     howToAchieve: 'Smart cube with gyro required. Total rotation degrees are tracked across all solves.',
     category: 'grind',
     icon: 'footprints',
     trackingKey: 'totalRotationDegrees',
     requiresSmartCube: true,
     tiers: [
-      { tier: 'bronze', requirement: 10000, xpReward: 300 },
-      { tier: 'silver', requirement: 42195, xpReward: 2000 },
-      { tier: 'gold', requirement: 100000, xpReward: 5000 },
+      { tier: 'bronze', requirement: 100000, xpReward: 300 },
+      { tier: 'silver', requirement: 500000, xpReward: 2000 },
+      { tier: 'gold', requirement: 2000000, xpReward: 5000 },
+      { tier: 'diamond', requirement: 10000000, xpReward: 25000 },
     ],
   },
 

@@ -20,6 +20,28 @@ import { analyzeCFOP, type CFOPAnalysis } from '@/lib/cfop-analyzer'
 import type { CubeFaces } from '@/lib/cube-faces'
 import type { GyroFrame, MoveFrame } from '@/types'
 
+function calculateRotationDegrees(gyroData: GyroFrame[]): number {
+  if (gyroData.length < 2) return 0
+
+  let totalDegrees = 0
+
+  for (let i = 1; i < gyroData.length; i++) {
+    const prev = gyroData[i - 1].quaternion
+    const curr = gyroData[i].quaternion
+
+    const dot = Math.min(1, Math.max(-1,
+      prev.x * curr.x + prev.y * curr.y + prev.z * curr.z + prev.w * curr.w
+    ))
+
+    const angleRad = 2 * Math.acos(Math.abs(dot))
+    const angleDeg = (angleRad * 180) / Math.PI
+
+    totalDegrees += angleDeg
+  }
+
+  return Math.round(totalDegrees)
+}
+
 interface SolveSessionState {
   scramble: string
   isRepeatedScramble: boolean
@@ -263,6 +285,11 @@ export function SolveSessionProvider({ children }: { children: ReactNode }) {
           statsUpdate.godsNumberSolves = userStats.godsNumberSolves + 1
         if (!isManual && time < 20000 && solution.length > 80)
           statsUpdate.sub20With80Moves = userStats.sub20With80Moves + 1
+
+        if (gyroData && gyroData.length > 1) {
+          const rotationDegrees = calculateRotationDegrees(gyroData)
+          statsUpdate.totalRotationDegrees = (userStats.totalRotationDegrees ?? 0) + rotationDegrees
+        }
 
         checkAndUpdateAchievements(statsUpdate).then(unlocks => {
           unlocks.forEach(unlock => {
