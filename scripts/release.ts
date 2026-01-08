@@ -116,7 +116,7 @@ async function release(type: ReleaseType) {
   if (await confirmDeploy()) {
     console.log('\n🚀 Building and deploying to Netlify...')
     exec('npm run build')
-    exec('npx netlify deploy --prod --dir=dist')
+    exec('netlify deploy --prod --dir=dist')
     console.log('\n✅ Deployed to Netlify!')
   }
 

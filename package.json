@@ -8,7 +8,7 @@
     "build": "npx tsx scripts/generate-version.ts && tsc -b && vite build",
     "release:minor": "npx tsx scripts/release.ts minor",
     "release:patch": "npx tsx scripts/release.ts patch",
-    "deploy": "npm run build && npx netlify deploy --prod --dir=dist",
+    "deploy": "npm run build && netlify deploy --prod --dir=dist",
     "lint": "eslint .",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
