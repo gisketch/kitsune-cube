@@ -819,6 +819,18 @@ export function SolveResults({
   const totalTimeGoal = isOwner ? (effectiveTotalTime ?? userTotalTimeGoal) : null
 
   const handleShare = useCallback(async () => {
+    const shortId = solve?.shortId
+    if (shortId) {
+      const url = `${window.location.origin}/s/${shortId}`
+      try {
+        await navigator.clipboard.writeText(url)
+        showToast('Link copied to clipboard!')
+      } catch {
+        showToast('Failed to copy link', 'error')
+      }
+      return
+    }
+
     const id = solveId || solve?.id
     if (!id) return
     
@@ -831,7 +843,7 @@ export function SolveResults({
     } catch {
       showToast('Failed to copy link', 'error')
     }
-  }, [solveId, solve?.id, userId, showToast])
+  }, [solveId, solve?.id, solve?.shortId, userId, showToast])
 
   const handleCopySolution = useCallback(async () => {
     const solution = solve?.solution || []

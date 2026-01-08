@@ -7,6 +7,10 @@
   function = "og-image"
 
 [[edge_functions]]
+  path = "/s/*"
+  function = "solve-meta"
+
+[[edge_functions]]
   path = "/solve/*"
   function = "solve-meta"
 

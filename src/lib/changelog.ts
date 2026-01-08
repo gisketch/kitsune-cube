@@ -17,6 +17,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.8',
+    date: '2026-01-08',
+    title: 'Share Your Solves 🔗',
+    description: 'Share your solves with beautiful custom embeds and short URLs!',
+    icon: 'rocket',
+    changes: [
+      { type: 'feature', text: 'Short solve URLs - share links are now 8 characters (e.g., /s/a7Bc3xYz)' },
+      { type: 'feature', text: 'Custom OG embeds - shared solves show time, scramble, and user info on Discord/Twitter' },
+      { type: 'improvement', text: 'Share button now copies the short URL to clipboard' },
+    ],
+  },
+  {
     version: '0.1.7',
     date: '2026-01-08',
     title: 'Goals & Favorites ⭐',

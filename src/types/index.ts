@@ -29,6 +29,7 @@ export interface Solve {
   isManual?: boolean
   isRepeatedScramble?: boolean
   isFavorite?: boolean
+  shortId?: string
 }
 
 export interface AppSettings {

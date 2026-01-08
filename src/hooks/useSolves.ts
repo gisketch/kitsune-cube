@@ -13,9 +13,11 @@ import {
   updateDoc,
   doc,
   writeBatch,
+  limit,
 } from 'firebase/firestore'
 import { db, isOfflineMode } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { generateShortId } from '@/lib/short-id'
 import type { Solve } from '@/types'
 
 export type { Solve }
@@ -137,6 +139,7 @@ export function useSolves() {
         const newSolve: Solve = {
           ...newSolveData,
           id: crypto.randomUUID(),
+          shortId: generateShortId(),
         }
         setSolves((prev) => [newSolve, ...prev])
         return newSolve
@@ -145,9 +148,26 @@ export function useSolves() {
       try {
         const solvesRef = collection(db!, 'users', user!.uid, 'solves')
         const newDocRef = doc(solvesRef)
-        const solveWithId = { ...cleanData, solveId: newDocRef.id }
+        
+        let shortId = generateShortId()
+        let attempts = 0
+        const maxAttempts = 5
+        
+        while (attempts < maxAttempts) {
+          const existingQuery = query(
+            collectionGroup(db!, 'solves'),
+            where('shortId', '==', shortId),
+            limit(1)
+          )
+          const existingDocs = await getDocs(existingQuery)
+          if (existingDocs.empty) break
+          shortId = generateShortId()
+          attempts++
+        }
+        
+        const solveWithId = { ...cleanData, solveId: newDocRef.id, shortId }
         await setDoc(newDocRef, solveWithId)
-        return { ...newSolveData, id: newDocRef.id } as Solve
+        return { ...newSolveData, id: newDocRef.id, shortId } as Solve
       } catch (error) {
         console.error('Failed to add solve to Firestore:', error)
         return null
@@ -354,6 +374,50 @@ export async function fetchPublicSolveWithUser(solveId: string, userId?: string)
     return { solve, userInfo }
   } catch (error) {
     console.error('Failed to fetch public solve with user:', error)
+    return { solve: null, userInfo: null }
+  }
+}
+
+export async function fetchSolveByShortId(shortId: string): Promise<SolveWithUserInfo> {
+  if (!db || isOfflineMode) {
+    const localSolves = loadLocalSolves()
+    const solve = localSolves.find(s => s.shortId === shortId) || null
+    return { solve, userInfo: null }
+  }
+
+  try {
+    const solvesGroup = collectionGroup(db, 'solves')
+    const q = query(solvesGroup, where('shortId', '==', shortId), limit(1))
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return { solve: null, userInfo: null }
+    }
+
+    const docSnap = snapshot.docs[0]
+    const solve = { id: docSnap.id, ...docSnap.data() } as Solve
+    const pathParts = docSnap.ref.path.split('/')
+    const foundUserId = pathParts[1]
+
+    let userInfo: { name?: string; avatar?: string } | null = null
+    if (foundUserId) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', foundUserId))
+        if (userDoc.exists()) {
+          const userData = userDoc.data()
+          userInfo = {
+            name: userData.displayName || 'Anonymous',
+            avatar: userData.photoURL || undefined,
+          }
+        }
+      } catch {
+        console.log('Could not fetch user info')
+      }
+    }
+
+    return { solve, userInfo }
+  } catch (error) {
+    console.error('Failed to fetch solve by shortId:', error)
     return { solve: null, userInfo: null }
   }
 }

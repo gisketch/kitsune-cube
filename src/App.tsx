@@ -17,6 +17,7 @@ import { AchievementsPage } from '@/components/achievements-page'
 import { LeaderboardPage } from '@/components/leaderboard-page'
 import { ManualTimerDisplay } from '@/components/manual-timer-display'
 import { SolvePage } from '@/components/solve-page'
+import { ShortSolvePage } from '@/components/short-solve-page'
 import { FAQPage } from '@/components/faq-page'
 import { SolvesListSidebar } from '@/components/solves-list-sidebar'
 import { ScrambleWidget } from '@/components/scramble-widget'
@@ -871,6 +872,7 @@ function App() {
             } />
             <Route path="solve/:solveId" element={<SolvePage />} />
             <Route path="solve/:userId/:solveId" element={<SolvePage />} />
+            <Route path="s/:shortId" element={<ShortSolvePage />} />
             <Route path="achievements" element={<AchievementsPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="simulator" element={<Simulator />} />

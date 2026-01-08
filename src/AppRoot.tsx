@@ -8,6 +8,11 @@ function SolveRedirect() {
   return <Navigate to={path} replace />
 }
 
+function ShortLinkRedirect() {
+  const shortId = window.location.pathname.split('/')[2]
+  return <Navigate to={`/app/s/${shortId}`} replace />
+}
+
 export function AppRoot() {
   return (
     <Routes>
@@ -16,6 +21,7 @@ export function AppRoot() {
       <Route path="/terms" element={<InProgressPage />} />
       <Route path="/changelog" element={<InProgressPage />} />
       <Route path="/docs" element={<InProgressPage />} />
+      <Route path="/s/:shortId" element={<ShortLinkRedirect />} />
       <Route path="/solve/*" element={<SolveRedirect />} />
       <Route path="/app/*" element={<TimerApp />} />
     </Routes>
